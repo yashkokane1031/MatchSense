@@ -82,7 +82,7 @@
 - **Draw ECE / MCE**: `0.0295` / `0.4129`
 - **Away ECE / MCE**: `0.0292` / `0.8009`
 
-> **Note on Away MCE (0.4384)**: The worst-case bin is `[0.9, 1.0]` containing only `|B_m| = 2` matches (1 win, observed frequency 0.5000 vs 0.9384 predicted). Its contribution to the overall 3.50% Away ECE is negligible (0.00077), confirming that overall probability calibration is robust across well-populated bins.
+> **Note on Away MCE (0.8009)**: The worst-case bin is `[0.8, 0.9]` containing only `|B_m| = 1` match (0 wins, observed frequency 0.0000 vs 0.8009 predicted). Its contribution to the overall Away ECE is negligible (0.00070), confirming that probability calibration is robust across well-populated bins.
 
 ### Away Outcome Reliability Bins (1,140 Matches)
 
