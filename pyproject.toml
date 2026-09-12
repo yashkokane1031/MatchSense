@@ -24,6 +24,7 @@ dependencies = [
     "statsmodels>=0.14",
     "requests>=2.31",
     "xgboost>=2.0",
+    "scikit-learn>=1.4",
 ]
 
 [dependency-groups]

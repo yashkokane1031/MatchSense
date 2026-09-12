@@ -39,11 +39,12 @@ class BasePredictor(ABC):
         """
         ...
 
-    @abstractmethod
     def predict_score_distribution(
         self, home_team: str, away_team: str, max_goals: int = 8
-    ) -> np.ndarray:
+    ) -> np.ndarray | None:
         """Predict the joint score probability distribution.
+
+        Optional. Returns None for models that do not natively model joint scores.
 
         Args:
             home_team: Canonical name of the home team.
@@ -51,33 +52,39 @@ class BasePredictor(ABC):
             max_goals: Maximum goals to consider per team.
 
         Returns:
-            (max_goals+1, max_goals+1) numpy array where entry [i, j]
-            is P(home_goals=i, away_goals=j).
+            (max_goals+1, max_goals+1) numpy array or None.
         """
-        ...
+        return None
 
-    def predict_most_likely_score(self, home_team: str, away_team: str) -> tuple[int, int]:
+    def predict_most_likely_score(
+        self, home_team: str, away_team: str
+    ) -> tuple[int, int] | None:
         """Predict the single most likely scoreline.
+
+        Optional. Returns None if score distribution is not supported.
 
         Args:
             home_team: Canonical name of the home team.
             away_team: Canonical name of the away team.
 
         Returns:
-            Tuple of (home_goals, away_goals) for the most probable score.
+            Tuple of (home_goals, away_goals) or None.
         """
         dist = self.predict_score_distribution(home_team, away_team)
+        if dist is None:
+            return None
         idx = np.unravel_index(dist.argmax(), dist.shape)
         return int(idx[0]), int(idx[1])
 
-    @abstractmethod
-    def get_team_strengths(self) -> dict[str, dict[str, float]]:
+    def get_team_strengths(self) -> dict[str, dict[str, float]] | None:
         """Return estimated attack/defense strengths for all teams.
 
+        Optional. Returns None for models without alpha/beta parameter decomposition.
+
         Returns:
-            Dict mapping team name to {"attack": float, "defense": float}.
+            Dict mapping team name to {"attack": float, "defense": float} or None.
         """
-        ...
+        return None
 
     @property
     @abstractmethod
