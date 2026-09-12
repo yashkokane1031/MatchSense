@@ -155,19 +155,20 @@ where $o_{i, c}$ is the closing decimal odds.
 ### 6.2 Pre-Gameweek Bankroll Sizing (Zero Intra-Gameweek Look-Ahead)
 To reflect real-world execution where gameweek fixtures kick off across staggered windows:
 * All wagers in Gameweek $g$ are sized simultaneously based on the bankroll at the start of that gameweek ($B_g$).
-* **Gameweek Exposure Cap**: Total capital committed across all bets in gameweek $g$ cannot exceed $0.25 \times B_g$. If $\sum \text{stake} > 0.25 B_g$, all stakes in GW $g$ are scaled down proportionally.
+* **Gameweek Exposure Cap (Quarter-Kelly Only)**: Total capital committed across all bets in gameweek $g$ under Quarter-Kelly cannot exceed $0.25 \times B_g$. If $\sum \text{stake}_{QK} > 0.25 B_g$, all Quarter-Kelly stakes in GW $g$ are scaled down proportionally.
 * Results settle as a batch at the conclusion of Gameweek $g$:
   $$B_{g+1} = B_g + \sum_{i \in g} \text{PnL}_i$$
 
 ### 6.3 Staking Models
-1. **Flat Staking**:
+1. **Flat Staking (Unconstrained Control)**:
    $$\text{stake}_{i, c} = 1.0 \text{ unit}$$
-2. **Quarter-Kelly Staking**:
+   *Always exactly 1.0 unit per qualifying bet regardless of bankroll level, acting as a clean, bankroll-independent baseline (bankroll can dip below zero without altering stake size).*
+2. **Quarter-Kelly Staking (Bankroll-Constrained)**:
    Full Kelly fraction:
    $$f^*_{i, c} = \frac{\text{EV}_{i, c}}{o_{i, c} - 1}$$
    Quarter-Kelly stake with dynamic bankroll ($B_0 = 100$ units):
    $$\text{stake}_{i, c} = \min\left( 0.25 \times f^*_{i, c} \times B_g, \ 0.05 \times B_g \right)$$
-   *(5% single-bet cap guards against tail risk).*
+   *(Subject to both the 5% single-bet cap and the 25% total gameweek exposure cap).*
 
 ### 6.4 Financial Metrics
 * **Total Bets ($N$) & Bet Frequency (%)**: Volume of wagers placed.
