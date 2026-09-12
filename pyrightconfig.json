@@ -1,0 +1,14 @@
+{
+  "include": [
+    "backend",
+    "ml",
+    "tests",
+    "scripts",
+    "alembic"
+  ],
+  "extraPaths": [
+    "."
+  ],
+  "venvPath": ".",
+  "venv": ".venv"
+}

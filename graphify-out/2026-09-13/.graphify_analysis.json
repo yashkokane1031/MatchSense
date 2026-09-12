@@ -1,0 +1,617 @@
+{
+  "communities": {
+    "0": [
+      "ml_features_form",
+      "ml_features_form_compute_form_features",
+      "ml_features_form_compute_home_away_splits",
+      "ml_features_form_compute_season_features",
+      "ml_features_form_compute_temporal_features",
+      "ml_features_form_empty_form_features",
+      "ml_features_form_py_dataframe",
+      "ml_features_form_py_timestamp",
+      "ml_features_form_rationale_1",
+      "ml_features_form_rationale_148",
+      "ml_features_form_rationale_199",
+      "ml_features_form_rationale_23",
+      "ml_features_form_rationale_243",
+      "ml_features_form_rationale_92",
+      "ml_features_h2h",
+      "ml_features_h2h_compute_h2h_features",
+      "ml_features_h2h_empty_h2h_features",
+      "ml_features_h2h_py_dataframe",
+      "ml_features_h2h_py_timestamp",
+      "ml_features_h2h_rationale_1",
+      "ml_features_h2h_rationale_18",
+      "ml_features_h2h_rationale_85",
+      "ml_features_pipeline",
+      "ml_features_pipeline_build_feature_matrix",
+      "ml_features_pipeline_build_match_features",
+      "ml_features_pipeline_py_dataframe",
+      "ml_features_pipeline_py_timestamp",
+      "ml_features_pipeline_rationale_1",
+      "ml_features_pipeline_rationale_32",
+      "ml_features_pipeline_rationale_97",
+      "tests_unit_test_features",
+      "tests_unit_test_features_rationale_1",
+      "tests_unit_test_features_rationale_109",
+      "tests_unit_test_features_rationale_112",
+      "tests_unit_test_features_rationale_126",
+      "tests_unit_test_features_rationale_137",
+      "tests_unit_test_features_rationale_140",
+      "tests_unit_test_features_rationale_15",
+      "tests_unit_test_features_rationale_18",
+      "tests_unit_test_features_rationale_30",
+      "tests_unit_test_features_rationale_40",
+      "tests_unit_test_features_rationale_49",
+      "tests_unit_test_features_rationale_67",
+      "tests_unit_test_features_rationale_70",
+      "tests_unit_test_features_rationale_81",
+      "tests_unit_test_features_rationale_90",
+      "tests_unit_test_features_rationale_99",
+      "tests_unit_test_features_testfeaturepipeline",
+      "tests_unit_test_features_testfeaturepipeline_test_build_match_features_returns_all_keys",
+      "tests_unit_test_features_testformfeatures",
+      "tests_unit_test_features_testformfeatures_test_form_after_several_matches",
+      "tests_unit_test_features_testformfeatures_test_form_does_not_leak_future_data",
+      "tests_unit_test_features_testformfeatures_test_form_first_match_of_season",
+      "tests_unit_test_features_testformfeatures_test_form_partial_window",
+      "tests_unit_test_features_testh2hfeatures",
+      "tests_unit_test_features_testh2hfeatures_test_h2h_no_history",
+      "tests_unit_test_features_testh2hfeatures_test_h2h_with_history",
+      "tests_unit_test_features_testseasonboundary",
+      "tests_unit_test_features_testseasonboundary_test_established_team_not_promoted",
+      "tests_unit_test_features_testseasonboundary_test_form_resets_at_season_start",
+      "tests_unit_test_features_testseasonboundary_test_is_newly_promoted_flag",
+      "tests_unit_test_features_testseasonboundary_test_newly_promoted_team_has_no_form"
+    ],
+    "1": [
+      "backend_api_dependencies",
+      "backend_api_dependencies_rationale_1",
+      "backend_api_dependencies_rationale_21",
+      "backend_api_dependencies_set_model",
+      "backend_api_main",
+      "backend_api_main_create_app",
+      "backend_api_main_lifespan",
+      "backend_api_main_rationale_1",
+      "backend_api_main_rationale_25",
+      "backend_api_main_rationale_47",
+      "backend_api_routes_health",
+      "backend_api_routes_health_health_check",
+      "backend_api_routes_health_py_get",
+      "backend_api_routes_health_rationale_1",
+      "backend_api_routes_health_rationale_16",
+      "backend_api_routes_predictions",
+      "backend_api_routes_predictions_get_team_strength",
+      "backend_api_routes_predictions_headtoheadrequest",
+      "backend_api_routes_predictions_list_teams",
+      "backend_api_routes_predictions_matchprediction",
+      "backend_api_routes_predictions_predict_head_to_head",
+      "backend_api_routes_predictions_py_get",
+      "backend_api_routes_predictions_rationale_1",
+      "backend_api_routes_predictions_rationale_17",
+      "backend_api_routes_predictions_rationale_23",
+      "backend_api_routes_predictions_rationale_29",
+      "backend_api_routes_predictions_rationale_41",
+      "backend_api_routes_predictions_rationale_49",
+      "backend_api_routes_predictions_rationale_66",
+      "backend_api_routes_predictions_rationale_75",
+      "backend_api_routes_predictions_scoreprediction",
+      "backend_api_routes_predictions_teamstrength",
+      "basemodel",
+      "fastapi",
+      "post",
+      "tests_unit_test_api",
+      "tests_unit_test_api_client",
+      "tests_unit_test_api_client_no_model",
+      "tests_unit_test_api_py_fixture",
+      "tests_unit_test_api_rationale_1",
+      "tests_unit_test_api_rationale_12",
+      "tests_unit_test_api_rationale_21",
+      "tests_unit_test_api_testhealthendpoint",
+      "tests_unit_test_api_testhealthendpoint_test_health_with_model",
+      "tests_unit_test_api_testhealthendpoint_test_health_without_model",
+      "tests_unit_test_api_testpredictionendpoints",
+      "tests_unit_test_api_testpredictionendpoints_test_head_to_head_no_model",
+      "tests_unit_test_api_testpredictionendpoints_test_head_to_head_unknown_team",
+      "tests_unit_test_api_testpredictionendpoints_test_head_to_head_valid",
+      "tests_unit_test_api_testteamendpoints",
+      "tests_unit_test_api_testteamendpoints_test_list_teams",
+      "tests_unit_test_api_testteamendpoints_test_team_strengths",
+      "tests_unit_test_api_testteamendpoints_test_team_strengths_unknown"
+    ],
+    "2": [
+      "backend_api_dependencies_get_model",
+      "backend_api_dependencies_rationale_14",
+      "backend_models_schemas_match",
+      "backend_models_schemas_match_repr",
+      "backend_models_schemas_rationale_18",
+      "backend_services_prediction",
+      "backend_services_prediction_predictionservice",
+      "backend_services_prediction_predictionservice_get_team_strength",
+      "backend_services_prediction_predictionservice_init",
+      "backend_services_prediction_predictionservice_list_teams",
+      "backend_services_prediction_predictionservice_model",
+      "backend_services_prediction_predictionservice_predict_match",
+      "backend_services_prediction_rationale_1",
+      "backend_services_prediction_rationale_15",
+      "backend_services_prediction_rationale_21",
+      "backend_services_prediction_rationale_47",
+      "backend_services_prediction_rationale_51",
+      "backend_services_prediction_rationale_8",
+      "ml_data_loader",
+      "ml_data_loader_load_matches_from_db",
+      "ml_data_loader_py_dataframe",
+      "ml_data_loader_py_session",
+      "ml_data_loader_rationale_1",
+      "ml_data_loader_rationale_19",
+      "ml_data_loader_rationale_89",
+      "ml_data_loader_save_matches_to_db",
+      "ml_models_dixon_coles_dixoncolesmodel",
+      "ml_models_dixon_coles_dixoncolesmodel_check_fitted",
+      "ml_models_dixon_coles_dixoncolesmodel_check_teams",
+      "ml_models_dixon_coles_dixoncolesmodel_get_model_info",
+      "ml_models_dixon_coles_dixoncolesmodel_get_team_strengths",
+      "ml_models_dixon_coles_dixoncolesmodel_init",
+      "ml_models_dixon_coles_dixoncolesmodel_model_name",
+      "ml_models_dixon_coles_dixoncolesmodel_predict_proba",
+      "ml_models_dixon_coles_dixoncolesmodel_predict_score_distribution",
+      "ml_models_dixon_coles_rationale_280",
+      "ml_models_dixon_coles_rationale_307",
+      "ml_models_dixon_coles_rationale_335",
+      "ml_models_dixon_coles_rationale_343",
+      "ml_models_dixon_coles_rationale_409",
+      "ml_models_dixon_coles_rationale_414",
+      "ml_models_dixon_coles_rationale_82",
+      "ml_models_dixon_coles_rationale_89",
+      "tests_integration_test_pipeline",
+      "tests_integration_test_pipeline_rationale_1",
+      "tests_integration_test_pipeline_rationale_67",
+      "tests_integration_test_pipeline_testfullpipeline",
+      "tests_integration_test_pipeline_testfullpipeline_test_end_to_end_pipeline"
+    ],
+    "3": [
+      "ml_data_ingestion",
+      "ml_data_ingestion_compute_implied_probabilities",
+      "ml_data_ingestion_download_season_csv",
+      "ml_data_ingestion_load_all_seasons",
+      "ml_data_ingestion_normalize_team_name",
+      "ml_data_ingestion_parse_season_csv",
+      "ml_data_ingestion_py_dataframe",
+      "ml_data_ingestion_py_path",
+      "ml_data_ingestion_rationale_1",
+      "ml_data_ingestion_rationale_149",
+      "ml_data_ingestion_rationale_185",
+      "ml_data_ingestion_rationale_49",
+      "ml_data_ingestion_rationale_61",
+      "ml_data_ingestion_rationale_98",
+      "ml_data_schemas",
+      "ml_data_schemas_py_dataframe",
+      "ml_data_schemas_rationale_1",
+      "ml_data_schemas_rationale_41",
+      "ml_data_schemas_result_matches_goals",
+      "scripts_seed_data",
+      "scripts_seed_data_main",
+      "scripts_seed_data_rationale_1",
+      "scripts_seed_data_rationale_33",
+      "tests_unit_test_ingestion",
+      "tests_unit_test_ingestion_rationale_1",
+      "tests_unit_test_ingestion_rationale_23",
+      "tests_unit_test_ingestion_rationale_40",
+      "tests_unit_test_ingestion_rationale_63",
+      "tests_unit_test_ingestion_rationale_95",
+      "tests_unit_test_ingestion_testcsvparser",
+      "tests_unit_test_ingestion_testcsvparser_test_date_parsing_both_formats",
+      "tests_unit_test_ingestion_testcsvparser_test_parse_season_csv_structure",
+      "tests_unit_test_ingestion_testimpliedprobabilities",
+      "tests_unit_test_ingestion_testimpliedprobabilities_test_missing_odds_columns",
+      "tests_unit_test_ingestion_testimpliedprobabilities_test_overround_removal",
+      "tests_unit_test_ingestion_testpanderavalidation",
+      "tests_unit_test_ingestion_testpanderavalidation_test_inconsistent_ftr_fails",
+      "tests_unit_test_ingestion_testpanderavalidation_test_missing_required_column_fails",
+      "tests_unit_test_ingestion_testpanderavalidation_test_negative_goals_fails",
+      "tests_unit_test_ingestion_testpanderavalidation_test_valid_data_passes",
+      "tests_unit_test_ingestion_testteamnamenormalization",
+      "tests_unit_test_ingestion_testteamnamenormalization_test_known_mappings",
+      "tests_unit_test_ingestion_testteamnamenormalization_test_unmapped_name_preserved"
+    ],
+    "4": [
+      "given",
+      "ml_models_dixon_coles_rationale_34",
+      "ml_models_dixon_coles_tau",
+      "settings",
+      "tests_property_test_poisson_properties",
+      "tests_property_test_poisson_properties_rationale_1",
+      "tests_property_test_poisson_properties_rationale_15",
+      "tests_property_test_poisson_properties_rationale_24",
+      "tests_property_test_poisson_properties_rationale_38",
+      "tests_property_test_poisson_properties_rationale_44",
+      "tests_property_test_poisson_properties_rationale_53",
+      "tests_property_test_poisson_properties_rationale_60",
+      "tests_property_test_poisson_properties_rationale_70",
+      "tests_property_test_poisson_properties_testpoissonproperties",
+      "tests_property_test_poisson_properties_testpoissonproperties_test_outcome_probs_in_valid_range",
+      "tests_property_test_poisson_properties_testpoissonproperties_test_outcome_probs_sum_to_one",
+      "tests_property_test_poisson_properties_testpoissonproperties_test_probabilities_non_negative",
+      "tests_property_test_poisson_properties_testpoissonproperties_test_score_distribution_sums_to_one",
+      "tests_property_test_poisson_properties_testpoissonproperties_test_tau_is_one_for_high_scores",
+      "tests_property_test_poisson_properties_testpoissonproperties_test_tau_is_positive",
+      "tests_unit_test_dixon_coles",
+      "tests_unit_test_dixon_coles_rationale_1",
+      "tests_unit_test_dixon_coles_rationale_18",
+      "tests_unit_test_dixon_coles_rationale_21",
+      "tests_unit_test_dixon_coles_rationale_27",
+      "tests_unit_test_dixon_coles_rationale_33",
+      "tests_unit_test_dixon_coles_rationale_39",
+      "tests_unit_test_dixon_coles_rationale_45",
+      "tests_unit_test_dixon_coles_rationale_50",
+      "tests_unit_test_dixon_coles_testtaucorrection",
+      "tests_unit_test_dixon_coles_testtaucorrection_test_tau_0_0",
+      "tests_unit_test_dixon_coles_testtaucorrection_test_tau_0_1",
+      "tests_unit_test_dixon_coles_testtaucorrection_test_tau_1_0",
+      "tests_unit_test_dixon_coles_testtaucorrection_test_tau_1_1",
+      "tests_unit_test_dixon_coles_testtaucorrection_test_tau_other_scores_return_1",
+      "tests_unit_test_dixon_coles_testtaucorrection_test_tau_positive_for_typical_rho"
+    ],
+    "5": [
+      "ml_models_dixon_coles_dixoncolesmodel_load",
+      "ml_models_dixon_coles_dixoncolesmodel_save",
+      "ml_models_dixon_coles_py_path",
+      "ml_models_dixon_coles_rationale_357",
+      "ml_models_dixon_coles_rationale_381",
+      "tests_unit_test_dixon_coles_rationale_100",
+      "tests_unit_test_dixon_coles_rationale_105",
+      "tests_unit_test_dixon_coles_rationale_111",
+      "tests_unit_test_dixon_coles_rationale_116",
+      "tests_unit_test_dixon_coles_rationale_122",
+      "tests_unit_test_dixon_coles_rationale_138",
+      "tests_unit_test_dixon_coles_rationale_148",
+      "tests_unit_test_dixon_coles_rationale_59",
+      "tests_unit_test_dixon_coles_rationale_62",
+      "tests_unit_test_dixon_coles_rationale_68",
+      "tests_unit_test_dixon_coles_rationale_75",
+      "tests_unit_test_dixon_coles_rationale_80",
+      "tests_unit_test_dixon_coles_rationale_84",
+      "tests_unit_test_dixon_coles_rationale_90",
+      "tests_unit_test_dixon_coles_rationale_95",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_fit_returns_self",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_fit_sets_teams",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_get_team_strengths",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_home_advantage_positive",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_model_info",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_predict_most_likely_score",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_probabilities_sum_to_one",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_reference_team_alpha_is_one",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_score_distribution_non_negative",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_score_distribution_shape",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_score_distribution_sums_to_one",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_serialization_roundtrip",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_unfitted_model_raises",
+      "tests_unit_test_dixon_coles_testdixoncolesmodel_test_unknown_team_raises"
+    ],
+    "6": [
+      "alembic_env",
+      "alembic_env_rationale_41",
+      "alembic_env_rationale_65",
+      "alembic_env_run_migrations_offline",
+      "alembic_env_run_migrations_online",
+      "backend_core_config",
+      "backend_core_config_rationale_1",
+      "backend_core_config_rationale_11",
+      "backend_core_config_settings",
+      "backend_core_database",
+      "backend_core_database_base",
+      "backend_core_database_create_tables",
+      "backend_core_database_get_db",
+      "backend_core_database_py_session",
+      "backend_core_database_rationale_1",
+      "backend_core_database_rationale_19",
+      "backend_core_database_rationale_25",
+      "backend_core_database_rationale_34",
+      "backend_models_schemas",
+      "backend_models_schemas_prediction",
+      "backend_models_schemas_prediction_repr",
+      "backend_models_schemas_rationale_1",
+      "backend_models_schemas_rationale_67",
+      "backend_models_schemas_rationale_80",
+      "backend_models_schemas_team",
+      "backend_models_schemas_team_repr",
+      "basesettings",
+      "declarativebase",
+      "tests_integration_test_pipeline_py_fixture",
+      "tests_integration_test_pipeline_rationale_56",
+      "tests_integration_test_pipeline_test_db"
+    ],
+    "7": [
+      "abc",
+      "ml_models_base",
+      "ml_models_base_basepredictor",
+      "ml_models_base_basepredictor_fit",
+      "ml_models_base_basepredictor_get_team_strengths",
+      "ml_models_base_basepredictor_model_name",
+      "ml_models_base_basepredictor_predict_most_likely_score",
+      "ml_models_base_basepredictor_predict_proba",
+      "ml_models_base_basepredictor_predict_score_distribution",
+      "ml_models_base_py_dataframe",
+      "ml_models_base_py_ndarray",
+      "ml_models_base_rationale_1",
+      "ml_models_base_rationale_14",
+      "ml_models_base_rationale_18",
+      "ml_models_base_rationale_30",
+      "ml_models_base_rationale_46",
+      "ml_models_base_rationale_60",
+      "ml_models_base_rationale_75",
+      "ml_models_base_rationale_85",
+      "ml_models_dixon_coles",
+      "ml_models_dixon_coles_rationale_1"
+    ],
+    "8": [
+      "ml_models_dixon_coles_dixoncolesmodel_build_parameter_vector",
+      "ml_models_dixon_coles_dixoncolesmodel_fit",
+      "ml_models_dixon_coles_dixoncolesmodel_neg_log_likelihood",
+      "ml_models_dixon_coles_dixoncolesmodel_unpack_parameters",
+      "ml_models_dixon_coles_py_dataframe",
+      "ml_models_dixon_coles_py_ndarray",
+      "ml_models_dixon_coles_rationale_113",
+      "ml_models_dixon_coles_rationale_127",
+      "ml_models_dixon_coles_rationale_159",
+      "ml_models_dixon_coles_rationale_196",
+      "ml_models_dixon_coles_rationale_63",
+      "ml_models_dixon_coles_time_decay_weights",
+      "series"
+    ],
+    "9": [
+      "tests_conftest",
+      "tests_conftest_fitted_model",
+      "tests_conftest_multi_season_matches",
+      "tests_conftest_py_dataframe",
+      "tests_conftest_py_fixture",
+      "tests_conftest_rationale_1",
+      "tests_conftest_rationale_21",
+      "tests_conftest_rationale_62",
+      "tests_conftest_rationale_80",
+      "tests_conftest_sample_matches"
+    ],
+    "10": [
+      "tests_unit_test_dixon_coles_py_dataframe",
+      "tests_unit_test_dixon_coles_py_fixture",
+      "tests_unit_test_dixon_coles_rationale_157",
+      "tests_unit_test_dixon_coles_rationale_165",
+      "tests_unit_test_dixon_coles_rationale_189",
+      "tests_unit_test_dixon_coles_testmediumscaleconvergence",
+      "tests_unit_test_dixon_coles_testmediumscaleconvergence_medium_dataset",
+      "tests_unit_test_dixon_coles_testmediumscaleconvergence_test_converges_at_scale"
+    ],
+    "11": [
+      "alembic_versions_4a5961dce17b_initial_tables",
+      "alembic_versions_4a5961dce17b_initial_tables_downgrade",
+      "alembic_versions_4a5961dce17b_initial_tables_rationale_22",
+      "alembic_versions_4a5961dce17b_initial_tables_rationale_90",
+      "alembic_versions_4a5961dce17b_initial_tables_upgrade"
+    ],
+    "12": [
+      "backend_api_init"
+    ],
+    "13": [
+      "backend_api_routes_init"
+    ],
+    "14": [
+      "backend_core_init"
+    ],
+    "15": [
+      "backend_init"
+    ],
+    "16": [
+      "backend_models_init"
+    ],
+    "17": [
+      "backend_services_init"
+    ],
+    "18": [
+      "ml_data_init"
+    ],
+    "19": [
+      "ml_evaluation_init"
+    ],
+    "20": [
+      "ml_features_init"
+    ],
+    "21": [
+      "ml_init"
+    ],
+    "22": [
+      "ml_models_init"
+    ],
+    "23": [
+      "pkg_matchsense"
+    ],
+    "24": [
+      "tests_init"
+    ],
+    "25": [
+      "tests_integration_init"
+    ],
+    "26": [
+      "tests_property_init"
+    ],
+    "27": [
+      "tests_unit_init"
+    ]
+  },
+  "cohesion": {
+    "0": 0.05182443151771549,
+    "1": 0.05224963715529753,
+    "2": 0.06382978723404255,
+    "3": 0.07308970099667775,
+    "4": 0.07142857142857142,
+    "5": 0.05714285714285714,
+    "6": 0.07741935483870968,
+    "7": 0.10952380952380952,
+    "8": 0.1794871794871795,
+    "9": 0.28888888888888886,
+    "10": 0.25,
+    "11": 0.4,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0
+  },
+  "gods": [
+    {
+      "id": "ml_models_dixon_coles_dixoncolesmodel",
+      "label": "DixonColesModel",
+      "degree": 45
+    },
+    {
+      "id": "tests_unit_test_dixon_coles_testdixoncolesmodel",
+      "label": "TestDixonColesModel",
+      "degree": 17
+    },
+    {
+      "id": "ml_data_ingestion_parse_season_csv",
+      "label": "parse_season_csv()",
+      "degree": 15
+    },
+    {
+      "id": "ml_features_form_compute_form_features",
+      "label": "compute_form_features()",
+      "degree": 14
+    },
+    {
+      "id": "ml_features_pipeline_build_match_features",
+      "label": "build_match_features()",
+      "degree": 14
+    },
+    {
+      "id": "ml_models_dixon_coles_tau",
+      "label": "_tau()",
+      "degree": 14
+    },
+    {
+      "id": "backend_services_prediction_predictionservice",
+      "label": "PredictionService",
+      "degree": 12
+    },
+    {
+      "id": "ml_models_base_basepredictor",
+      "label": "BasePredictor",
+      "degree": 11
+    },
+    {
+      "id": "backend_core_database_base",
+      "label": "Base",
+      "degree": 10
+    },
+    {
+      "id": "ml_features_h2h_compute_h2h_features",
+      "label": "compute_h2h_features()",
+      "degree": 10
+    }
+  ],
+  "surprises": [
+    {
+      "source": "TestMediumScaleConvergence",
+      "target": "DixonColesModel",
+      "source_files": [
+        "tests/unit/test_dixon_coles.py",
+        "ml/models/dixon_coles.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "set_model()",
+      "target": "DixonColesModel",
+      "source_files": [
+        "backend/api/dependencies.py",
+        "ml/models/dixon_coles.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "lifespan()",
+      "target": "DixonColesModel",
+      "source_files": [
+        "backend/api/main.py",
+        "ml/models/dixon_coles.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "TestPoissonProperties",
+      "target": "DixonColesModel",
+      "source_files": [
+        "tests/property/test_poisson_properties.py",
+        "ml/models/dixon_coles.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "TestDixonColesModel",
+      "target": "DixonColesModel",
+      "source_files": [
+        "tests/unit/test_dixon_coles.py",
+        "ml/models/dixon_coles.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `DixonColesModel` connect `DixonColesModel` to `main.py`, `parse_season_csv`, `_tau`, `TestDixonColesModel`, `dixon_coles.py`, `.fit`, `conftest.py`, `TestMediumScaleConvergence`?",
+      "why": "High betweenness centrality (0.473) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `build_match_features()` connect `compute_form_features` to `DixonColesModel`?",
+      "why": "High betweenness centrality (0.150) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `TestDixonColesModel` connect `TestDixonColesModel` to `DixonColesModel`, `_tau`?",
+      "why": "High betweenness centrality (0.116) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 8 inferred relationships involving `DixonColesModel` (e.g. with `get_model()` and `set_model()`) actually correct?",
+      "why": "`DixonColesModel` has 8 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `matchsense` to the rest of the system?",
+      "why": "1 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `compute_form_features` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.05182443151771549 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `main.py` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.05224963715529753 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

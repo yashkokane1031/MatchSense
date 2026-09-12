@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: matchsense-db
+    environment:
+      POSTGRES_USER: matchsense
+      POSTGRES_PASSWORD: matchsense
+      POSTGRES_DB: matchsense
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matchsense"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: matchsense-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://matchsense:matchsense@db:5432/matchsense
+      MODEL_PATH: data/models/dixon_coles_latest.pkl
+      LOG_LEVEL: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pgdata:
