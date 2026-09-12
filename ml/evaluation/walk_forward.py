@@ -49,6 +49,12 @@ def run_walk_forward_cv(
         Tuple of (df_all_eval, fold_metrics_list).
     """
     matches_df = matches_df.sort_values("Date").reset_index(drop=True)
+    if "Gameweek" not in matches_df.columns:
+        gw_list: list[int] = []
+        for _, s_df in matches_df.groupby("Season", sort=False):
+            gw_list.extend(np.clip(np.arange(len(s_df)) // 10 + 1, 1, 38).tolist())
+        matches_df["Gameweek"] = gw_list
+
     all_seasons = sorted(matches_df["Season"].unique())
     eval_records: list[pd.DataFrame] = []
     fold_metrics: list[dict] = []
@@ -66,11 +72,15 @@ def run_walk_forward_cv(
 
         train_seasons = all_seasons[test_idx - window_size_seasons : test_idx]
         test_data = matches_df[matches_df["Season"] == test_s].copy()
+        matches_per_season = int(len(test_data))
+        window_size_matches = window_size_seasons * matches_per_season
+
         logger.info(
-            "Evaluating fold: train on %s -> test on %s (%d matches)",
+            "Evaluating fold: train on %s -> test on %s (%d matches, rolling window=%d matches)",
             train_seasons,
             test_s,
             len(test_data),
+            window_size_matches,
         )
 
         test_gameweeks = sorted(test_data["Gameweek"].unique())
@@ -80,10 +90,10 @@ def run_walk_forward_cv(
             gw_fixtures = test_data[test_data["Gameweek"] == gw]
             min_date = gw_fixtures["Date"].min()
 
-            # Strict chronological filtering: all matches prior to the current gameweek kickoff
-            train_pool = matches_df[
-                (matches_df["Date"] < min_date) & (matches_df["Season"].isin(train_seasons))
-            ]
+            # Strict chronological filtering: all matches prior to current gameweek kickoff,
+            # retaining the most recent window_size_matches to maintain fixed rolling window
+            prior_matches = matches_df[matches_df["Date"] < min_date]
+            train_pool = prior_matches.tail(window_size_matches)
 
             # Fit model on current training pool
             model = model_factory()

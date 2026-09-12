@@ -108,9 +108,17 @@ class TestDixonColesModel:
         assert 0 <= away <= 5
 
     def test_unknown_team_raises(self, fitted_model):
-        """Predicting with unknown team should raise ValueError."""
+        """Predicting with unknown team should raise ValueError when allow_unknown=False."""
         with pytest.raises(ValueError, match="Unknown team"):
             fitted_model.predict_proba("Arsenal", "Nonexistent FC")
+
+    def test_allow_unknown_team(self, sample_matches):
+        """Predicting with unknown team should succeed when allow_unknown=True."""
+        model = DixonColesModel(allow_unknown=True)
+        model.fit(sample_matches)
+        probs = model.predict_proba("Arsenal", "Nonexistent FC")
+        assert pytest.approx(sum(probs.values()), abs=1e-5) == 1.0
+        assert probs["prob_home"] > probs["prob_away"]
 
     def test_unfitted_model_raises(self):
         """Predicting without fit() should raise RuntimeError."""

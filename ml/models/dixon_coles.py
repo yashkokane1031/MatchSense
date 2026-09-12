@@ -86,13 +86,17 @@ class DixonColesModel(BasePredictor):
     One team's attack strength is fixed at 1.0 for identifiability.
     """
 
-    def __init__(self, xi: float = 0.005):
+    def __init__(self, xi: float = 0.005, allow_unknown: bool = False):
         """Initialize the model.
 
         Args:
             xi: Time-decay rate per day. Higher = more aggressive decay.
+            allow_unknown: If True, unknown/newly promoted teams use empirical
+                promoted priors (25th percentile attack, 75th percentile defense)
+                instead of raising ValueError.
         """
         self.xi = xi
+        self.allow_unknown = allow_unknown
 
         # Populated after fit()
         self._teams: list[str] = []
@@ -328,7 +332,8 @@ class DixonColesModel(BasePredictor):
     def predict_proba(self, home_team: str, away_team: str) -> dict[str, float]:
         """Predict outcome probabilities for a match."""
         self._check_fitted()
-        self._check_teams(home_team, away_team)
+        if not self.allow_unknown:
+            self._check_teams(home_team, away_team)
 
         dist = self.predict_score_distribution(home_team, away_team)
 
@@ -355,10 +360,21 @@ class DixonColesModel(BasePredictor):
     ) -> np.ndarray:
         """Predict the joint score probability distribution."""
         self._check_fitted()
-        self._check_teams(home_team, away_team)
+        if not self.allow_unknown:
+            self._check_teams(home_team, away_team)
 
-        lambda_ = self._attack[home_team] * self._defense[away_team] * self._home_advantage
-        mu = self._attack[away_team] * self._defense[home_team]
+        att_vals = list(self._attack.values())
+        def_vals = list(self._defense.values())
+        default_att = float(np.percentile(att_vals, 25)) if att_vals else 1.0
+        default_def = float(np.percentile(def_vals, 75)) if def_vals else 1.0
+
+        att_home = self._attack.get(home_team, default_att)
+        def_away = self._defense.get(away_team, default_def)
+        att_away = self._attack.get(away_team, default_att)
+        def_home = self._defense.get(home_team, default_def)
+
+        lambda_ = att_home * def_away * self._home_advantage
+        mu = att_away * def_home
 
         # Build joint probability matrix with Dixon-Coles correction
         dist = np.zeros((max_goals + 1, max_goals + 1))
@@ -418,6 +434,7 @@ class DixonColesModel(BasePredictor):
             "home_advantage": self._home_advantage,
             "rho": self._rho,
             "xi": self.xi,
+            "allow_unknown": self.allow_unknown,
             "n_matches": self._n_matches,
             "fit_date": self._fit_date,
         }
@@ -438,7 +455,7 @@ class DixonColesModel(BasePredictor):
         with open(path, "rb") as f:
             state = pickle.load(f)
 
-        model = cls(xi=state["xi"])
+        model = cls(xi=state["xi"], allow_unknown=state.get("allow_unknown", False))
         model._teams = state["teams"]
         model._team_to_idx = {t: i for i, t in enumerate(model._teams)}
         model._reference_team = state["reference_team"]

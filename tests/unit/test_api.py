@@ -19,9 +19,10 @@ def client(fitted_model):
 @pytest.fixture
 def client_no_model():
     """Test client with no model loaded."""
-    set_model(None)
     with TestClient(app) as c:
+        set_model(None)
         yield c
+        set_model(None)
 
 
 class TestHealthEndpoint:
