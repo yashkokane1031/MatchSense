@@ -1,0 +1,68 @@
+# MatchSense — Multi-Model Comparative Evaluation: XGBoost vs. Dixon-Coles
+
+## 1. Executive Summary & Out-of-Sample Performance
+
+Comparative benchmark of `XGBoostPredictor` (advanced feature pipeline: window-anchored Elo, rolling shots/corners, separated xG) against `DixonColesModel` (Poisson intensity model with time decay) across 1,140 Premier League matches (3 out-of-sample seasons: 2023-24, 2024-25, 2025-26) under identical rolling 4-season walk-forward cross-validation.
+
+| Architecture | Model Class | Matches | RPS | Brier Score | Log-Loss | Accuracy |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Dixon-Coles** | Generative Poisson (Bivariate) | 1,140 | 0.2007 | 0.5850 | 0.9872 | 52.3% |
+| **XGBoost** | Discriminative Gradient Boosted Trees | 1,140 | 0.2036 | 0.5927 | 0.9962 | 53.2% |
+
+## 2. Direct Head-to-Head Comparison: XGBoost vs. Dixon-Coles
+
+Direct paired statistical tests on matched out-of-sample fixture predictions. Negative diff_RPS indicates XGBoost superior accuracy; positive indicates Dixon-Coles superior accuracy.
+
+| Season / Scope | Matches | RPS (DC) | RPS (XGB) | diff_RPS (XGB - DC) [negative = XGBoost better] | Wilcoxon p-value | Acc (DC) | Acc (XGB) | McNemar p-value | Better |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **2023-24** | 380 | 0.1905 | 0.1933 | +0.0027 | 0.3540 | 57.6% | 59.5% | 0.2812 | **Tied / Not Significant** |
+| **2024-25** | 380 | 0.2000 | 0.2044 | +0.0045 | 0.0712 | 52.9% | 52.6% | 1.0000 | **Tied / Not Significant** |
+| **2025-26** | 380 | 0.2116 | 0.2132 | +0.0016 | 0.3737 | 46.3% | 47.6% | 0.4576 | **Tied / Not Significant** |
+| **Pooled (3 Seasons)** | **1,140** | **0.2007** | **0.2036** | **+0.0029** | **0.0329** | **52.3%** | **53.2%** | **0.3049** | **Dixon-Coles** |
+
+> [!NOTE]
+> **Caveat on Pooled Testing**: The pooled 1,140-match significance test combines overlapping rolling training windows across adjacent seasons; per-fold test statistics provide the primary independent verification.
+
+## 3. Performance vs. Market Consensus Lines (1,140 Matches)
+
+Comparison against closing market consensus odds (AvgH, AvgD, AvgA). Negative diff indicates model outperforming the market.
+
+| Architecture | Model RPS | Market RPS | diff_RPS (Model - Market) | Model Acc | Market Acc | Wilcoxon p-val | Market Outperformed? |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Dixon-Coles** | 0.2007 | 0.1955 | +0.0052 | 52.3% | 54.2% | 0.0061 | NO (Market Superior) |
+| **XGBoost** | 0.2036 | 0.1955 | +0.0081 | 53.2% | 54.2% | 0.0000 | NO (Market Superior) |
+
+## 4. Probability Calibration & Reliability Summary
+
+| Metric | Dixon-Coles | XGBoost | Better Calibration |
+| :--- | :---: | :---: | :--- |
+| **Overall ECE** | 0.0300 (3.0%) | 0.0289 (2.9%) | **XGBoost** |
+| **Home ECE** | 0.0292 (2.9%) | 0.0279 (2.8%) | **XGBoost** |
+| **Draw ECE** | 0.0259 (2.6%) | 0.0295 (2.9%) | **Dixon-Coles** |
+| **Away ECE** | 0.0350 (3.5%) | 0.0292 (2.9%) | **XGBoost** |
+| **Home MCE** | 0.1310 (13.1%) | 0.1092 (10.9%) | **XGBoost** |
+| **Draw MCE** | 0.0865 (8.6%) | 0.4129 (41.3%) | **Dixon-Coles** |
+| **Away MCE** | 0.4384 (43.8%) | 0.8009 (80.1%) | **Dixon-Coles** |
+
+## 5. Financial Simulation & ROI (Edge >= 5%)
+
+| Model | Odds Source | Staking | Bets | Turnover | Net PnL | ROI % | Win % | Max DD % | Annual Sharpe |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Dixon-Coles** | Avg | flat | 796 | 796.0u | -56.3u | -7.1% | 30.5% | 78.3% | -0.10 |
+| **Dixon-Coles** | Avg | quarter_kelly | 796 | 1333.4u | -68.5u | -5.1% | 30.5% | 83.1% | -0.26 |
+| **Dixon-Coles** | B365 | flat | 766 | 766.0u | -19.1u | -2.5% | 30.9% | 71.2% | 0.06 |
+| **Dixon-Coles** | B365 | quarter_kelly | 766 | 1332.5u | -52.8u | -4.0% | 30.9% | 80.1% | -0.05 |
+| **XGBoost** | Avg | flat | 928 | 928.0u | -118.1u | -12.7% | 30.1% | 134.2% | -0.75 |
+| **XGBoost** | Avg | quarter_kelly | 928 | 840.8u | -94.6u | -11.2% | 30.1% | 96.1% | -0.90 |
+| **XGBoost** | B365 | flat | 897 | 897.0u | -73.7u | -8.2% | 31.0% | 114.3% | 0.09 |
+| **XGBoost** | B365 | quarter_kelly | 897 | 1036.7u | -89.7u | -8.6% | 31.0% | 95.4% | -0.62 |
+
+## 6. Automated Sanity Verification Gates
+
+| Gate | Criterion | Threshold / Requirement | Measured Value | Status |
+| :---: | :--- | :--- | :--- | :---: |
+| **Gate 1** | Mathematical Invariants | Sum(P) = 1.0 +/- 1e-5, P(c) >= 0 | `max_dev = 1.11e-16, non-negative = True` | **[PASS]** |
+| **Gate 2** | RPS Empirical Sanity Range | Pooled RPS in [0.180, 0.240] | `Pooled RPS = 0.2036` | **[PASS]** |
+| **Gate 3** | Cold-Start Safety Fallback | Promoted succeeds via Q25 Elo; fake 404s | `Luton prob_sum = 1.0000` | **[PASS]** |
+| **Gate 4** | Execution Budget (Walk-Forward CV) | 3-Fold Walk-Forward CV < 180.0s (beating Dixon-Coles 181.9s) | `142.49s elapsed (1.25s/GW on 70 real features; beats DC 181.88s)` | **[PASS]** |
+| **Gate 5** | Regression Guard | All tests continue to pass | `Zero regressions across full suite` | **[PASS]** |

@@ -71,3 +71,16 @@ def test_xgboost_cold_start_fallback_for_promoted_team(mock_training_data):
     assert probs["prob_away"] > 0
     total_prob = probs["prob_home"] + probs["prob_draw"] + probs["prob_away"]
     assert total_prob == pytest.approx(1.0, abs=1e-4)
+
+
+def test_xgboost_with_precomputed_features(mock_training_data):
+    from ml.features.pipeline import build_feature_matrix
+
+    precomp = build_feature_matrix(mock_training_data)
+    model = XGBoostPredictor(precomputed_features=precomp)
+    model.fit(mock_training_data)
+
+    probs = model.predict_proba("Arsenal", "Chelsea")
+    assert "prob_home" in probs
+    assert probs["prob_home"] + probs["prob_draw"] + probs["prob_away"] == pytest.approx(1.0, abs=1e-4)
+

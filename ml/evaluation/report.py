@@ -209,3 +209,156 @@ class EvaluationReport:
     def print_summary(self) -> None:
         """Print markdown report to stdout."""
         print(self.to_markdown())
+
+
+@dataclass
+class ComparisonReport:
+    """Multi-model comparative evaluation report for XGBoost vs Dixon-Coles."""
+
+    dc_report: EvaluationReport
+    xgb_report: EvaluationReport
+    head_to_head: dict[str, Any]
+    market_comparison: dict[str, Any]
+    sanity_gates: dict[str, Any]
+
+    def to_markdown(self) -> str:
+        """Generate comprehensive GitHub-flavored Markdown comparative scorecard."""
+        lines: list[str] = [
+            "# MatchSense — Multi-Model Comparative Evaluation: XGBoost vs. Dixon-Coles\n",
+            "## 1. Executive Summary & Out-of-Sample Performance\n",
+            "Comparative benchmark of `XGBoostPredictor` (advanced feature pipeline: window-anchored Elo, rolling shots/corners, separated xG) against `DixonColesModel` (Poisson intensity model with time decay) across 1,140 Premier League matches (3 out-of-sample seasons: 2023-24, 2024-25, 2025-26) under identical rolling 4-season walk-forward cross-validation.\n",
+            "| Architecture | Model Class | Matches | RPS | Brier Score | Log-Loss | Accuracy |",
+            "| :--- | :--- | :---: | :---: | :---: | :---: | :---: |",
+        ]
+
+        dc_agg = self.dc_report.aggregate_metrics
+        xgb_agg = self.xgb_report.aggregate_metrics
+        tot_m = sum(int(f.get("n_matches", 0)) for f in self.dc_report.folds)
+
+        lines.append(
+            f"| **Dixon-Coles** | Generative Poisson (Bivariate) | {tot_m:,} | "
+            f"{dc_agg.get('rps', 0.0):.4f} | {dc_agg.get('brier', 0.0):.4f} | "
+            f"{dc_agg.get('log_loss', 0.0):.4f} | {dc_agg.get('accuracy', 0.0):.1%} |"
+        )
+        lines.append(
+            f"| **XGBoost** | Discriminative Gradient Boosted Trees | {tot_m:,} | "
+            f"{xgb_agg.get('rps', 0.0):.4f} | {xgb_agg.get('brier', 0.0):.4f} | "
+            f"{xgb_agg.get('log_loss', 0.0):.4f} | {xgb_agg.get('accuracy', 0.0):.1%} |\n"
+        )
+
+        # 2. Direct Head-to-Head Comparison
+        lines.extend([
+            "## 2. Direct Head-to-Head Comparison: XGBoost vs. Dixon-Coles\n",
+            "Direct paired statistical tests on matched out-of-sample fixture predictions. Negative diff_RPS indicates XGBoost superior accuracy; positive indicates Dixon-Coles superior accuracy.\n",
+            "| Season / Scope | Matches | RPS (DC) | RPS (XGB) | diff_RPS (XGB - DC) [negative = XGBoost better] | Wilcoxon p-value | Acc (DC) | Acc (XGB) | McNemar p-value | Better |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |",
+        ])
+
+        per_fold = self.head_to_head.get("per_fold", {})
+        for season, d in per_fold.items():
+            lines.append(
+                f"| **{season}** | {d.get('matches', 0):,} | "
+                f"{d.get('rps_dc', 0.0):.4f} | {d.get('rps_xgb', 0.0):.4f} | "
+                f"{d.get('diff_rps', 0.0):+.4f} | {d.get('wilcoxon_p', 1.0):.4f} | "
+                f"{d.get('acc_dc', 0.0):.1%} | {d.get('acc_xgb', 0.0):.1%} | "
+                f"{d.get('mcnemar_p', 1.0):.4f} | **{d.get('better', 'Tied')}** |"
+            )
+
+        pooled = self.head_to_head.get("pooled", {})
+        if pooled:
+            lines.append(
+                f"| **Pooled (3 Seasons)** | **{pooled.get('matches', tot_m):,}** | "
+                f"**{pooled.get('rps_dc', 0.0):.4f}** | **{pooled.get('rps_xgb', 0.0):.4f}** | "
+                f"**{pooled.get('diff_rps', 0.0):+.4f}** | **{pooled.get('wilcoxon_p', 1.0):.4f}** | "
+                f"**{pooled.get('acc_dc', 0.0):.1%}** | **{pooled.get('acc_xgb', 0.0):.1%}** | "
+                f"**{pooled.get('mcnemar_p', 1.0):.4f}** | **{pooled.get('better', 'Tied')}** |\n"
+            )
+            lines.extend([
+                "> [!NOTE]",
+                "> **Caveat on Pooled Testing**: The pooled 1,140-match significance test combines overlapping rolling training windows across adjacent seasons; per-fold test statistics provide the primary independent verification.\n",
+            ])
+
+        # 3. Model vs Market Performance
+        if self.market_comparison:
+            lines.extend([
+                "## 3. Performance vs. Market Consensus Lines (1,140 Matches)\n",
+                "Comparison against closing market consensus odds (AvgH, AvgD, AvgA). Negative diff indicates model outperforming the market.\n",
+                "| Architecture | Model RPS | Market RPS | diff_RPS (Model - Market) | Model Acc | Market Acc | Wilcoxon p-val | Market Outperformed? |",
+                "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |",
+            ])
+            for m_name, m_data in self.market_comparison.items():
+                m_diff = m_data.get("diff_rps", 0.0)
+                m_out = "YES (p < 0.05 *)" if m_diff < 0 and m_data.get("wilcoxon_p", 1.0) < 0.05 else "NO (Market Superior)"
+                lines.append(
+                    f"| **{m_name}** | {m_data.get('model_rps', 0.0):.4f} | {m_data.get('market_rps', 0.0):.4f} | "
+                    f"{m_diff:+.4f} | {m_data.get('model_acc', 0.0):.1%} | {m_data.get('market_acc', 0.0):.1%} | "
+                    f"{m_data.get('wilcoxon_p', 1.0):.4f} | {m_out} |"
+                )
+            lines.append("")
+
+        # 4. Calibration Comparison
+        dc_cal = self.dc_report.calibration_results or {}
+        xgb_cal = self.xgb_report.calibration_results or {}
+        if dc_cal and xgb_cal:
+            lines.extend([
+                "## 4. Probability Calibration & Reliability Summary\n",
+                "| Metric | Dixon-Coles | XGBoost | Better Calibration |",
+                "| :--- | :---: | :---: | :--- |",
+            ])
+            metrics = [
+                ("Overall ECE", "ece_overall"),
+                ("Home ECE", "ece_home"),
+                ("Draw ECE", "ece_draw"),
+                ("Away ECE", "ece_away"),
+                ("Home MCE", "mce_home"),
+                ("Draw MCE", "mce_draw"),
+                ("Away MCE", "mce_away"),
+            ]
+            for label, key in metrics:
+                v_dc = float(dc_cal.get(key, 0.0))
+                v_xgb = float(xgb_cal.get(key, 0.0))
+                better = "XGBoost" if v_xgb < v_dc else ("Dixon-Coles" if v_dc < v_xgb else "Tied")
+                lines.append(f"| **{label}** | {v_dc:.4f} ({v_dc:.1%}) | {v_xgb:.4f} ({v_xgb:.1%}) | **{better}** |")
+            lines.append("")
+
+        # 5. Financial Backtesting Comparison
+        dc_bt = self.dc_report.backtest_results or {}
+        xgb_bt = self.xgb_report.backtest_results or {}
+        if dc_bt or xgb_bt:
+            lines.extend([
+                "## 5. Financial Simulation & ROI (Edge >= 5%)\n",
+                "| Model | Odds Source | Staking | Bets | Turnover | Net PnL | ROI % | Win % | Max DD % | Annual Sharpe |",
+                "| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            ])
+            for m_label, bt in [("Dixon-Coles", dc_bt), ("XGBoost", xgb_bt)]:
+                for _, b in bt.items():
+                    lines.append(
+                        f"| **{m_label}** | {b.get('odds_source', 'N/A')} | {b.get('staking', 'N/A')} | "
+                        f"{b.get('total_bets', 0):,} | {b.get('turnover', 0.0):.1f}u | "
+                        f"{b.get('net_pnl', 0.0):+.1f}u | {b.get('roi', 0.0):+.1f}% | "
+                        f"{b.get('win_rate', 0.0):.1%} | {b.get('max_drawdown_pct', 0.0):.1f}% | "
+                        f"{b.get('annualized_sharpe', 0.0):.2f} |"
+                    )
+            lines.append("")
+
+        # 6. Automated Sanity Gates
+        if self.sanity_gates:
+            lines.extend([
+                "## 6. Automated Sanity Verification Gates\n",
+                "| Gate | Criterion | Threshold / Requirement | Measured Value | Status |",
+                "| :---: | :--- | :--- | :--- | :---: |",
+            ])
+            for g_id, g in self.sanity_gates.items():
+                status_icon = "[PASS]" if g.get("passed", False) else "[FAIL]"
+                lines.append(
+                    f"| **{g_id}** | {g.get('name', '')} | {g.get('threshold', '')} | "
+                    f"`{g.get('measured', '')}` | **{status_icon}** |"
+                )
+            lines.append("")
+
+        return "\n".join(lines)
+
+    def print_summary(self) -> None:
+        """Print comparative markdown report to stdout."""
+        print(self.to_markdown())
+

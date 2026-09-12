@@ -23,7 +23,6 @@ DEFAULT_XGB_PARAMS: dict[str, Any] = {
     "reg_lambda": 1.0,
     "min_child_weight": 3,
     "random_state": 42,
-    "missing": np.nan,
     "objective": "multi:softprob",
     "num_class": 3,
     "eval_metric": "mlogloss",
@@ -33,15 +32,43 @@ DEFAULT_XGB_PARAMS: dict[str, Any] = {
 class XGBoostPredictor(BasePredictor):
     """Discriminative match outcome predictor using regularized gradient-boosted trees."""
 
-    def __init__(self, params: dict[str, Any] | None = None) -> None:
-        self.params = {**DEFAULT_XGB_PARAMS, **(params or {})}
-        self.model: xgb.XGBClassifier | None = None
+    def __init__(
+        self,
+        params: dict[str, Any] | None = None,
+        precomputed_features: pd.DataFrame | None = None,
+    ) -> None:
+        merged = {**DEFAULT_XGB_PARAMS, **(params or {})}
+        self.n_estimators = int(merged.pop("n_estimators", 120))
+        self.params = merged
+        self.booster: xgb.Booster | None = None
         self._feature_names: list[str] = []
         self._fitted_matches: pd.DataFrame | None = None
         self._final_elo: dict[str, float] = {}
         self._last_date: pd.Timestamp | None = None
         self._last_season: str | None = None
         self._all_seasons: list[str] = []
+        self._precomputed_features: pd.DataFrame | None = precomputed_features
+        self._precomputed_dict: dict[tuple[pd.Timestamp, str, str], dict[str, Any]] = {}
+        self._fixtures_by_pair: dict[tuple[str, str], list[tuple[pd.Timestamp, dict[str, Any]]]] = {}
+        if precomputed_features is not None:
+            self._init_precomputed(precomputed_features)
+
+    def _init_precomputed(self, df: pd.DataFrame) -> None:
+        """Index precomputed bounded features for fast lookup during CV."""
+        dates = pd.to_datetime(df["date"])
+        homes = df["home_team"].astype(str)
+        aways = df["away_team"].astype(str)
+        records = df.to_dict(orient="records")
+        for d, h, a, rec in zip(dates, homes, aways, records):
+            ts = pd.Timestamp(d)
+            clean_rec: dict[str, Any] = {str(k): v for k, v in rec.items()}
+            self._precomputed_dict[(ts, h, a)] = clean_rec
+            pair = (h, a)
+            if pair not in self._fixtures_by_pair:
+                self._fixtures_by_pair[pair] = []
+            self._fixtures_by_pair[pair].append((ts, clean_rec))
+        for pair in self._fixtures_by_pair:
+            self._fixtures_by_pair[pair].sort(key=lambda x: x[0])
 
     @property
     def model_name(self) -> str:
@@ -54,6 +81,16 @@ class XGBoostPredictor(BasePredictor):
     @property
     def teams(self) -> list[str]:
         return list(self._final_elo.keys())
+
+    def get_model_info(self) -> dict[str, Any]:
+        """Return model metadata for health endpoint and status reporting."""
+        return {
+            "model_name": self.model_name,
+            "n_teams": len(self.teams),
+            "n_features": len(self.feature_names),
+            "n_estimators": self.n_estimators,
+            "max_depth": self.params.get("max_depth", 3),
+        }
 
     def fit(self, matches: pd.DataFrame) -> "XGBoostPredictor":
         """Fit XGBoost classifier on historical match window."""
@@ -68,7 +105,17 @@ class XGBoostPredictor(BasePredictor):
         self._final_elo = final_ratings
 
         # 2. Build full feature matrix
-        feat_df = build_feature_matrix(matches_sorted, precomputed_elo=elo_features)
+        if self._precomputed_dict:
+            rows = []
+            for _, r in matches_sorted.iterrows():
+                key = (pd.Timestamp(r["Date"]), str(r["HomeTeam"]), str(r["AwayTeam"]))
+                base_feat = dict(self._precomputed_dict.get(key, {}))
+                if key in elo_features:
+                    base_feat.update(elo_features[key])
+                rows.append(base_feat)
+            feat_df = pd.DataFrame(rows)
+        else:
+            feat_df = build_feature_matrix(matches_sorted, precomputed_elo=elo_features)
 
         # 3. Identify feature columns vs metadata/targets
         meta_cols = {
@@ -83,25 +130,25 @@ class XGBoostPredictor(BasePredictor):
         feature_cols = [c for c in feat_df.columns if c not in meta_cols]
         self._feature_names = feature_cols
 
-        # 4. Prepare X and y
+        # 4. Prepare x_mat and y
         x_mat = feat_df[feature_cols].copy()
         for col in x_mat.columns:
             x_mat[col] = pd.to_numeric(x_mat[col], errors="coerce").astype(float)
 
         target_map = {"H": 0, "D": 1, "A": 2}
-        y = feat_df["result"].map(target_map).to_numpy()
+        y = feat_df["result"].map(target_map).to_numpy(dtype=float)
 
-        # 5. Fit XGBClassifier
-        self.model = xgb.XGBClassifier(**self.params)
-        self.model.fit(x_mat, y)
+        # 5. Fit XGBoost Booster directly via DMatrix
+        dtrain = xgb.DMatrix(x_mat, label=y, missing=np.nan)
+        self.booster = xgb.train(self.params, dtrain, num_boost_round=self.n_estimators)
         logger.info(
-            "Fitted XGBoost model on %d matches with %d features", len(x_mat), len(feature_cols)
+            "Fitted XGBoost booster on %d matches with %d features", len(x_mat), len(feature_cols)
         )
         return self
 
     def predict_proba(self, home_team: str, away_team: str) -> dict[str, float]:
         """Predict outcome probabilities for a match."""
-        if self.model is None or self._fitted_matches is None:
+        if self.booster is None or self._fitted_matches is None:
             # Unfitted fallback: uniform
             return {"prob_home": 1.0 / 3.0, "prob_draw": 1.0 / 3.0, "prob_away": 1.0 / 3.0}
 
@@ -118,14 +165,23 @@ class XGBoostPredictor(BasePredictor):
         next_date = (self._last_date or pd.Timestamp.now()) + pd.Timedelta(days=1)
         current_season = self._last_season or "2024-25"
 
-        raw_features = build_match_features(
-            matches=self._fitted_matches,
-            home_team=home_team,
-            away_team=away_team,
-            match_date=next_date,
-            season=current_season,
-            all_seasons=self._all_seasons,
-        )
+        raw_features = None
+        if self._fixtures_by_pair and self._last_date is not None:
+            fixtures = self._fixtures_by_pair.get((home_team, away_team), [])
+            for fixture_date, fixture_rec in fixtures:
+                if fixture_date > self._last_date:
+                    raw_features = dict(fixture_rec)
+                    break
+
+        if raw_features is None:
+            raw_features = build_match_features(
+                matches=self._fitted_matches,
+                home_team=home_team,
+                away_team=away_team,
+                match_date=next_date,
+                season=current_season,
+                all_seasons=self._all_seasons,
+            )
 
         # Inject Elo features
         r_home = self._final_elo.get(home_team, promoted_baseline)
@@ -155,7 +211,8 @@ class XGBoostPredictor(BasePredictor):
         x_test = pd.DataFrame([row_dict], columns=self._feature_names)
         for col in x_test.columns:
             x_test[col] = pd.to_numeric(x_test[col], errors="coerce").astype(float)
-        raw_probs = self.model.predict_proba(x_test)[0]
+        dtest = xgb.DMatrix(x_test, missing=np.nan)
+        raw_probs = self.booster.predict(dtest)[0]
 
         # Map to H, D, A
         p_h = float(raw_probs[0])

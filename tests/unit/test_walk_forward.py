@@ -54,3 +54,23 @@ def test_walk_forward_execution(synthetic_seasons_data):
     assert len(fold_metrics) == 1
     assert "rps" in fold_metrics[0]
     assert "accuracy" in fold_metrics[0]
+
+
+def test_walk_forward_execution_with_xgboost(synthetic_seasons_data):
+    """Walk forward CV runs identically with XGBoostPredictor without leakage."""
+    from ml.models.xgboost_model import XGBoostPredictor
+
+    df_eval, fold_metrics = run_walk_forward_cv(
+        model_factory=lambda: XGBoostPredictor(),
+        matches_df=synthetic_seasons_data,
+        test_seasons=["2024-25"],
+        window_size_seasons=1,
+    )
+    assert len(df_eval) == 20
+    assert "prob_home" in df_eval.columns
+    assert "prob_draw" in df_eval.columns
+    assert "prob_away" in df_eval.columns
+    assert len(fold_metrics) == 1
+    assert "rps" in fold_metrics[0]
+    assert 0.0 <= fold_metrics[0]["rps"] <= 1.0
+    assert "accuracy" in fold_metrics[0]
