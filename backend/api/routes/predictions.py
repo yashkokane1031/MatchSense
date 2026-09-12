@@ -32,8 +32,8 @@ class MatchPrediction(BaseModel):
     prob_home: float
     prob_draw: float
     prob_away: float
-    predicted_score: ScorePrediction
-    score_distribution: list[list[float]]
+    predicted_score: ScorePrediction | None = None
+    score_distribution: list[list[float]] | None = None
     model: str
 
 

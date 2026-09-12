@@ -86,6 +86,13 @@ class BasePredictor(ABC):
         """
         return None
 
+    def get_model_info(self) -> dict[str, object]:
+        """Return human-readable metadata about the model instance.
+
+        Optional. Subclasses can override to return model parameters and status.
+        """
+        return {"model_name": self.model_name}
+
     @property
     @abstractmethod
     def model_name(self) -> str:

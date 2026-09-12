@@ -10,8 +10,8 @@ from backend.api.main import app
 @pytest.fixture
 def client(fitted_model):
     """Test client with a pre-loaded model."""
-    set_model(fitted_model)
     with TestClient(app) as c:
+        set_model(fitted_model)
         yield c
     set_model(None)
 
@@ -109,3 +109,62 @@ class TestTeamEndpoints:
     def test_team_strengths_unknown(self, client):
         response = client.get("/api/v1/teams/Nonexistent/strengths")
         assert response.status_code == 404
+
+
+class TestXGBoostApiEndpoints:
+    @pytest.fixture
+    def xgb_client(self, sample_matches):
+        from ml.models.xgboost_model import XGBoostPredictor
+        model = XGBoostPredictor()
+        # Add basic stats columns if not present
+        matches = sample_matches.copy()
+        for col in ["HS", "AS", "HST", "AST", "HC", "AC"]:
+            if col not in matches.columns:
+                matches[col] = 10
+        model.fit(matches)
+        with TestClient(app) as c:
+            set_model(model)
+            yield c
+        set_model(None)
+
+    def test_xgboost_health(self, xgb_client):
+        response = xgb_client.get("/api/v1/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert data["model_name"] == "xgboost"
+        assert data["n_features"] > 10
+
+    def test_xgboost_head_to_head_nullable_scoreline(self, xgb_client):
+        response = xgb_client.post(
+            "/api/v1/predictions/head-to-head",
+            json={"home_team": "Arsenal", "away_team": "Chelsea"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["model"] == "xgboost"
+        assert 0 <= data["prob_home"] <= 1
+        assert data["predicted_score"] is None
+        assert data["score_distribution"] is None
+
+    def test_xgboost_strengths_returns_404(self, xgb_client):
+        response = xgb_client.get("/api/v1/teams/Arsenal/strengths")
+        assert response.status_code == 404
+        assert "does not provide attack/defense parameter decompositions" in response.json()["detail"]
+
+    def test_xgboost_distinguishes_promoted_from_fake(self, xgb_client):
+        # Known promoted team in KNOWN_PL_TEAMS with 0 matches in window should succeed
+        resp_promoted = xgb_client.post(
+            "/api/v1/predictions/head-to-head",
+            json={"home_team": "Arsenal", "away_team": "Ipswich"},
+        )
+        assert resp_promoted.status_code == 200
+        assert resp_promoted.json()["prob_home"] > 0
+
+        # Unknown / fake team must return 404
+        resp_fake = xgb_client.post(
+            "/api/v1/predictions/head-to-head",
+            json={"home_team": "Arsenal", "away_team": "Atlantis United"},
+        )
+        assert resp_fake.status_code == 404
+        assert "Unknown team" in resp_fake.json()["detail"]
