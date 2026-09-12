@@ -457,7 +457,7 @@ git commit -m "feat(features): add rolling shot and match activity feature extra
 **Files:**
 - Create: `ml/features/xg.py`
 - Modify: `ml/features/pipeline.py`
-- Test: `tests/unit/test_features.py`
+- Modify: `tests/unit/test_features.py`
 
 **Interfaces:**
 - Produces:
@@ -465,17 +465,16 @@ git commit -m "feat(features): add rolling shot and match activity feature extra
   - `build_match_features(...)` updated with `home_` and `away_` match stats and optional xG metrics.
   - `build_feature_matrix(...)` updated with shot metrics and window-anchored Elo joining.
 
-- [ ] **Step 1: Write unit tests for separated xG and updated pipeline**
+- [ ] **Step 1: Add unit tests to tests/unit/test_features.py for new match stats and xG schema isolation**
 
-Add tests to `tests/unit/test_features.py` verifying:
-1. When Understat data is absent, `home_rolling_xg_for/against/diff` and `away_rolling_xg_for/against/diff` are None.
-2. Understat metrics NEVER overwrite or share names with in-repo shot stats (`rolling_sot_for`).
-3. `build_match_features` contains both `home_rolling_shots_for` and `away_rolling_shots_for`.
+In `tests/unit/test_features.py`, append tests to `TestFeaturePipeline`:
+1. `test_build_match_features_includes_rolling_shots_and_corners`: asserts that `home_rolling_shots_for`, `away_rolling_shots_for`, and corner metrics are included in the returned dictionary without modifying or breaking existing form/H2H keys.
+2. `test_xg_schema_isolation`: asserts that `home_rolling_xg_for/against/diff` are `None` when Understat data is absent, and that they never share names or mingle with `rolling_sot_for`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `uv run pytest tests/unit/test_features.py -v`
-Expected: FAIL due to missing xG module and pipeline parameters.
+Run: `uv run pytest tests/unit/test_features.py::TestFeaturePipeline::test_build_match_features_includes_rolling_shots_and_corners -v`
+Expected: FAIL due to missing shot/corner keys.
 
 - [ ] **Step 3: Implement ml/features/xg.py**
 
@@ -743,13 +742,14 @@ git commit -m "feat(api): support optional score distributions and dynamic featu
 
 ---
 
-### Task 7: Walk-Forward CV & Multi-Model Evaluation Report (`ml/evaluation/report.py`, `scripts/evaluate.py`)
+### Task 7: Walk-Forward CV & Multi-Model Evaluation Report (`ml/evaluation/walk_forward.py`, `ml/evaluation/report.py`, `scripts/evaluate.py`)
 
 **Files:**
 - Modify: `ml/evaluation/walk_forward.py`
 - Modify: `ml/evaluation/report.py`
 - Modify: `scripts/evaluate.py`
-- Test: `tests/integration/test_multi_model_cv.py`
+- Modify: `tests/unit/test_walk_forward.py`
+- Create: `tests/integration/test_multi_model_cv.py`
 
 **Interfaces:**
 - Produces:
@@ -759,7 +759,14 @@ git commit -m "feat(api): support optional score distributions and dynamic featu
     - Model vs Model table with mandated header `diff_RPS (XGB - DC) [negative = XGBoost better]` and explicit `Better` column.
     - Automated Sanity Gates 1 to 5 validation.
 
-- [ ] **Step 1: Write integration test for multi-model walk-forward CV**
+- [ ] **Step 1: Verify test_walk_forward.py generalizes to XGBoost**
+
+Add `test_walk_forward_execution_with_xgboost(synthetic_seasons_data)` to `tests/unit/test_walk_forward.py`, asserting that `run_walk_forward_cv` executes identically with `model_factory=lambda: XGBoostPredictor()` without model-specific leakage or crashes.
+
+Run: `uv run pytest tests/unit/test_walk_forward.py -v`
+Expected: Both tests pass (Dixon-Coles and XGBoost).
+
+- [ ] **Step 2: Write integration test for multi-model walk-forward CV**
 
 Create `tests/integration/test_multi_model_cv.py`:
 ```python
