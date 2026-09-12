@@ -153,3 +153,39 @@ class TestFeaturePipeline:
         # Check temporal features
         assert "home_days_since_last_match" in features
         assert "home_is_newly_promoted" in features
+
+    def test_build_match_features_includes_rolling_shots_and_corners(self, sample_matches):
+        """Pipeline should return rolling shot and corner statistics for both teams."""
+        all_seasons = ["2024-25"]
+        features = build_match_features(
+            sample_matches, "Arsenal", "Chelsea",
+            pd.Timestamp("2024-10-05"), "2024-25", all_seasons,
+        )
+        assert "home_rolling_shots_for" in features
+        assert "away_rolling_shots_for" in features
+        assert "home_rolling_sot_for" in features
+        assert "away_rolling_sot_for" in features
+        assert "home_rolling_sot_ratio" in features
+        assert "away_rolling_sot_ratio" in features
+        assert "home_rolling_corners_for" in features
+        assert "away_rolling_corners_for" in features
+
+    def test_xg_schema_isolation(self, sample_matches):
+        """xG metrics must be separate columns, never overwriting or mingling with shot metrics."""
+        all_seasons = ["2024-25"]
+        features = build_match_features(
+            sample_matches, "Arsenal", "Chelsea",
+            pd.Timestamp("2024-10-05"), "2024-25", all_seasons,
+            understat_matches=None,
+        )
+        assert "home_rolling_xg_for" in features
+        assert "home_rolling_xg_against" in features
+        assert "home_rolling_xg_diff" in features
+        assert "away_rolling_xg_for" in features
+        assert "away_rolling_xg_against" in features
+        assert "away_rolling_xg_diff" in features
+        # When Understat data is absent, xG columns are None
+        assert features["home_rolling_xg_for"] is None
+        assert features["away_rolling_xg_for"] is None
+        # In-repo shot metrics remain independently defined
+        assert "home_rolling_sot_for" in features

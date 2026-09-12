@@ -49,27 +49,36 @@ def compute_match_stats_features(
     corners_for_list: list[float] = []
     corners_against_list: list[float] = []
 
+    has_shots = "HS" in recent.columns and "AS" in recent.columns
+    has_sot = "HST" in recent.columns and "AST" in recent.columns
+    has_corners = "HC" in recent.columns and "AC" in recent.columns
+
     for _, row in recent.iterrows():
         is_home = row["HomeTeam"] == team
-        sf = row["HS"] if is_home else row["AS"]
-        sa = row["AS"] if is_home else row["HS"]
-        sotf = row["HST"] if is_home else row["AST"]
-        sota = row["AST"] if is_home else row["HST"]
-        cf = row["HC"] if is_home else row["AC"]
-        ca = row["AC"] if is_home else row["HC"]
 
-        if pd.notna(sf):
-            shots_for_list.append(float(sf))
-        if pd.notna(sa):
-            shots_against_list.append(float(sa))
-        if pd.notna(sotf):
-            sot_for_list.append(float(sotf))
-        if pd.notna(sota):
-            sot_against_list.append(float(sota))
-        if pd.notna(cf):
-            corners_for_list.append(float(cf))
-        if pd.notna(ca):
-            corners_against_list.append(float(ca))
+        if has_shots:
+            sf = row["HS"] if is_home else row["AS"]
+            sa = row["AS"] if is_home else row["HS"]
+            if pd.notna(sf):
+                shots_for_list.append(float(sf))
+            if pd.notna(sa):
+                shots_against_list.append(float(sa))
+
+        if has_sot:
+            sotf = row["HST"] if is_home else row["AST"]
+            sota = row["AST"] if is_home else row["HST"]
+            if pd.notna(sotf):
+                sot_for_list.append(float(sotf))
+            if pd.notna(sota):
+                sot_against_list.append(float(sota))
+
+        if has_corners:
+            cf = row["HC"] if is_home else row["AC"]
+            ca = row["AC"] if is_home else row["HC"]
+            if pd.notna(cf):
+                corners_for_list.append(float(cf))
+            if pd.notna(ca):
+                corners_against_list.append(float(ca))
 
     mean_sf = float(pd.Series(shots_for_list).mean()) if shots_for_list else None
     mean_sa = float(pd.Series(shots_against_list).mean()) if shots_against_list else None
