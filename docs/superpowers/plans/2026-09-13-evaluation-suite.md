@@ -340,6 +340,53 @@ def mcnemar_accuracy_test(
     chi2_stat = float(((abs(n10 - n01) - 1.0) ** 2) / discordant)
     p_val = float(1.0 - stats.chi2.cdf(chi2_stat, df=1))
     return McNemarResult(statistic=chi2_stat, p_value=p_val, n10=n10, n01=n01, is_exact=False)
+
+
+def evaluate_significance_suite(
+    df_eval: pd.DataFrame,
+    model_rps_col: str,
+    model_correct_col: str,
+    baseline_specs: list[dict[str, str]],
+    season_col: str = "Season",
+) -> dict:
+    """Evaluate statistical significance per fold (primary evidence) and pooled (descriptive with caveat).
+
+    Args:
+        df_eval: DataFrame of evaluated out-of-sample matches.
+        model_rps_col: Column name for model's RPS values.
+        model_correct_col: Column name for model's binary correctness (1/0).
+        baseline_specs: List of dicts with keys 'name', 'rps_col', 'correct_col'.
+        season_col: Column name identifying the season.
+
+    Returns:
+        Structured dict with 'per_fold' (primary) and 'pooled' (descriptive with caveat).
+    """
+    seasons = sorted(df_eval[season_col].unique()) if season_col in df_eval.columns else []
+    per_fold: dict[str, dict] = {}
+
+    for s in seasons:
+        s_df = df_eval[df_eval[season_col] == s]
+        per_fold[str(s)] = {}
+        for b in baseline_specs:
+            w_res = wilcoxon_rps_test(s_df[model_rps_col].to_numpy(), s_df[b["rps_col"]].to_numpy())
+            m_res = mcnemar_accuracy_test(s_df[model_correct_col].to_numpy(), s_df[b["correct_col"]].to_numpy())
+            per_fold[str(s)][b["name"]] = {"wilcoxon": w_res, "mcnemar": m_res}
+
+    pooled_results: dict[str, dict] = {}
+    for b in baseline_specs:
+        w_res = wilcoxon_rps_test(df_eval[model_rps_col].to_numpy(), df_eval[b["rps_col"]].to_numpy())
+        m_res = mcnemar_accuracy_test(df_eval[model_correct_col].to_numpy(), df_eval[b["correct_col"]].to_numpy())
+        pooled_results[b["name"]] = {"wilcoxon": w_res, "mcnemar": m_res}
+
+    caveat = (
+        "The pooled 1,140-match significance test combines overlapping training windows across "
+        "adjacent seasons; per-fold test statistics provide the primary independent verification."
+    )
+
+    return {
+        "per_fold": per_fold,
+        "pooled": {"caveat": caveat, "results": pooled_results},
+    }
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1202,9 +1249,18 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Run CLI to produce baseline scorecard**
+- [ ] **Step 2: Run CLI to produce baseline scorecard & verify sanity gates**
 Run: `uv run python scripts/evaluate.py --output reports/baseline_evaluation.md`
 Expected: Output report saved to `reports/baseline_evaluation.md` with 0 errors.
+
+**Go / No-Go Sanity Verification Gates (Leakage & Market Realism Checks):**
+1. **RPS Sanity Range**:
+   - Out-of-sample RPS for Dixon-Coles must fall within $[0.180, 0.240]$ (typical top-flight prediction literature range: $\approx 0.19-0.23$).
+   - **RED FLAG / STOP CONDITION**: If $\text{RPS} < 0.150$, immediately stop and debug the pipeline — this is the classic signature of temporal data leakage (e.g., future results leaking into the rolling window).
+   - If $\text{RPS} > 0.230$, inspect whether model probabilities are underfitting or uncalibrated.
+2. **Financial ROI Sanity Range**:
+   - Against closing odds (`Avg` or `B365`), model ROI under flat staking should be roughly flat to mildly negative (between $-10.0\%$ and $+5.0\%$).
+   - **RED FLAG / STOP CONDITION**: If $\text{ROI} > +10.0\%$ across the 1,140 out-of-sample matches against closing lines, immediately stop and debug the odds join and pre-gameweek cutoff — beating closing Premier League lines by double digits over 3 seasons is virtually impossible without an odds-alignment bug or forward-looking information.
 
 - [ ] **Step 3: Run full pytest suite & lint gates**
 Run: `uv run pytest`
