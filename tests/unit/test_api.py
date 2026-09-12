@@ -68,6 +68,19 @@ class TestPredictionEndpoints:
         assert response.status_code == 404
         assert "Unknown team" in response.json()["detail"]
 
+    def test_head_to_head_promoted_team(self, client):
+        """Newly promoted team in KNOWN_PL_TEAMS should succeed with promoted prior."""
+        response = client.post(
+            "/api/v1/predictions/head-to-head",
+            json={"home_team": "Arsenal", "away_team": "Ipswich"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["home_team"] == "Arsenal"
+        assert data["away_team"] == "Ipswich"
+        assert 0 <= data["prob_home"] <= 1
+        assert data["prob_home"] > data["prob_away"]
+
     def test_head_to_head_no_model(self, client_no_model):
         response = client_no_model.post(
             "/api/v1/predictions/head-to-head",

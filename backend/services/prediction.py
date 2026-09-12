@@ -1,6 +1,7 @@
 """Prediction service encapsulating prediction domain logic."""
 
 from backend.api.dependencies import get_model
+from ml.data.schemas import KNOWN_PL_TEAMS
 from ml.models.dixon_coles import DixonColesModel
 
 
@@ -28,9 +29,20 @@ class PredictionService:
             Dict matching MatchPrediction schema.
         """
         model = self.model
-        proba = model.predict_proba(home_team, away_team)
-        score = model.predict_most_likely_score(home_team, away_team)
-        dist = model.predict_score_distribution(home_team, away_team)
+        known_pool = set(model._teams) | KNOWN_PL_TEAMS
+        for team in [home_team, away_team]:
+            if team not in known_pool:
+                known = ", ".join(sorted(known_pool))
+                raise ValueError(f"Unknown team '{team}'. Known teams: {known}")
+
+        prev_allow = model.allow_unknown
+        model.allow_unknown = True
+        try:
+            proba = model.predict_proba(home_team, away_team)
+            score = model.predict_most_likely_score(home_team, away_team)
+            dist = model.predict_score_distribution(home_team, away_team)
+        finally:
+            model.allow_unknown = prev_allow
 
         return {
             "home_team": home_team,

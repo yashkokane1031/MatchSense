@@ -51,6 +51,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """Run full out-of-sample walk-forward benchmark."""
+    import sys
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     args = parse_args()
 
     # 1. Load 7 historical seasons (2019-20 through 2025-26)
@@ -118,6 +123,17 @@ def main() -> None:
         "mce_home": cal_res.mce_home,
         "mce_draw": cal_res.mce_draw,
         "mce_away": cal_res.mce_away,
+        "away_bins": [
+            {
+                "bin_lower": b.bin_lower,
+                "bin_upper": b.bin_upper,
+                "count": b.count,
+                "mean_predicted": b.mean_predicted,
+                "observed_frequency": b.observed_frequency,
+                "gap": b.gap,
+            }
+            for b in cal_res.tables["A"]
+        ],
     }
 
     # 6. Financial Backtesting
