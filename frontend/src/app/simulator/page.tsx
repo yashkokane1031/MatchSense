@@ -57,12 +57,7 @@ function SimulatorContent() {
           prob_home: 0.51,
           prob_draw: 0.25,
           prob_away: 0.24,
-          features: {
-            elo_diff: 65,
-            form_pts_diff: 4,
-            sot_diff: 1.8,
-            rest_days_diff: 2,
-          },
+          features: null,
         },
       };
       setData(fallback);

@@ -7,7 +7,10 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 
+from ml.data.normalization import normalize_team
 from ml.features.elo import compute_window_elo
+from ml.features.form import compute_form_features, compute_temporal_features
+from ml.features.match_stats import compute_match_stats_features
 from ml.features.pipeline import build_feature_matrix, build_match_features
 from ml.models.base import BasePredictor
 
@@ -225,6 +228,131 @@ class XGBoostPredictor(BasePredictor):
             p_h, p_d, p_a = 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0
 
         return {"prob_home": p_h, "prob_draw": p_d, "prob_away": p_a}
+
+    def get_team_profile(self, team: str) -> dict[str, Any] | None:
+        """Return team profile with current Elo, rolling form, and shot metrics.
+
+        Returns None if model is not fitted or team is unknown.
+        Never returns hardcoded or fabricated statistics.
+        """
+        if self._fitted_matches is None or not self._final_elo:
+            return None
+
+        c_team = normalize_team(team)
+        has_matches = (
+            c_team in self._final_elo
+            or (self._fitted_matches["HomeTeam"] == c_team).any()
+            or (self._fitted_matches["AwayTeam"] == c_team).any()
+        )
+        if not has_matches:
+            return None
+
+        surviving_elos = list(self._final_elo.values())
+        promoted_baseline = (
+            float(np.percentile(surviving_elos, 25)) if surviving_elos else 1450.0
+        )
+        current_elo = self._final_elo.get(c_team, promoted_baseline)
+
+        next_date = (self._last_date or pd.Timestamp.now()) + pd.Timedelta(days=1)
+        current_season = self._last_season or "2026-27"
+
+        form = compute_form_features(
+            self._fitted_matches, c_team, next_date, current_season, window=5
+        )
+        stats = compute_match_stats_features(
+            self._fitted_matches, c_team, next_date, current_season, window=5
+        )
+        temporal = compute_temporal_features(
+            self._fitted_matches, c_team, next_date, current_season, self._all_seasons
+        )
+
+        rolling_sot = stats.get("rolling_sot_for")
+        rolling_corners = stats.get("rolling_corners_for")
+        form_points = form.get("points_last_n")
+        days_since_last = temporal.get("days_since_last_match")
+
+        return {
+            "current_elo": round(float(current_elo), 1),
+            "rolling_sot": round(float(rolling_sot), 1) if rolling_sot is not None else None,
+            "rolling_corners": round(float(rolling_corners), 1) if rolling_corners is not None else None,
+            "recent_form_points": form_points,
+            "days_since_last_match": days_since_last,
+        }
+
+    def get_match_feature_differentials(
+        self, home_team: str, away_team: str
+    ) -> dict[str, Any] | None:
+        """Extract honest feature differentials for head-to-head match comparison.
+
+        Returns None if model is not fitted or if teams cannot be evaluated.
+        Never invents synthetic fallback data.
+        """
+        if self.booster is None or self._fitted_matches is None or not self._final_elo:
+            return None
+
+        c_home = normalize_team(home_team)
+        c_away = normalize_team(away_team)
+
+        surviving_elos = list(self._final_elo.values())
+        promoted_baseline = (
+            float(np.percentile(surviving_elos, 25)) if surviving_elos else 1450.0
+        )
+
+        r_home = self._final_elo.get(c_home, promoted_baseline)
+        r_away = self._final_elo.get(c_away, promoted_baseline)
+        # Standard match differential including +65 Elo home advantage
+        elo_diff = (r_home + 65.0) - r_away
+
+        next_date = (self._last_date or pd.Timestamp.now()) + pd.Timedelta(days=1)
+        current_season = self._last_season or "2026-27"
+
+        h_form = compute_form_features(
+            self._fitted_matches, c_home, next_date, current_season, window=5
+        )
+        a_form = compute_form_features(
+            self._fitted_matches, c_away, next_date, current_season, window=5
+        )
+        h_pts = h_form.get("points_last_n")
+        a_pts = a_form.get("points_last_n")
+        form_pts_diff = (h_pts - a_pts) if (h_pts is not None and a_pts is not None) else None
+
+        h_stats = compute_match_stats_features(
+            self._fitted_matches, c_home, next_date, current_season, window=5
+        )
+        a_stats = compute_match_stats_features(
+            self._fitted_matches, c_away, next_date, current_season, window=5
+        )
+        h_sot = h_stats.get("rolling_sot_for")
+        a_sot = a_stats.get("rolling_sot_for")
+        sot_diff = (h_sot - a_sot) if (h_sot is not None and a_sot is not None) else None
+
+        h_temp = compute_temporal_features(
+            self._fitted_matches, c_home, next_date, current_season, self._all_seasons
+        )
+        a_temp = compute_temporal_features(
+            self._fitted_matches, c_away, next_date, current_season, self._all_seasons
+        )
+        h_rest = h_temp.get("days_since_last_match")
+        a_rest = a_temp.get("days_since_last_match")
+        rest_days_diff = (h_rest - a_rest) if (h_rest is not None and a_rest is not None) else None
+
+        return {
+            "elo_diff": round(float(elo_diff), 1),
+            "form_pts_diff": form_pts_diff,
+            "sot_diff": round(float(sot_diff), 1) if sot_diff is not None else None,
+            "rest_days_diff": rest_days_diff,
+        }
+
+    def get_feature_importances(self, importance_type: str = "gain") -> dict[str, float]:
+        """Return normalized feature importances from the booster."""
+        if self.booster is None:
+            return {}
+        scores = self.booster.get_score(importance_type=importance_type)
+        total = sum(scores.values()) if scores else 1.0
+        return {
+            k: round(v / total, 4)
+            for k, v in sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        }
 
     @property
     def model_name(self) -> str:

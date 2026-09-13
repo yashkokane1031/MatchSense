@@ -94,18 +94,32 @@ class PredictionService:
         c_home = canonicalize_team_name(home_team)
         c_away = canonicalize_team_name(away_team)
 
-        xgb_features = {}
-        try:
-            xgb_model = self.get_active_model("xgboost")
-            if hasattr(xgb_model, "get_team_profile"):
-                h_prof = xgb_model.get_team_profile(c_home) or {}
-                a_prof = xgb_model.get_team_profile(c_away) or {}
-                if "current_elo" in h_prof and "current_elo" in a_prof:
-                    xgb_features["elo_diff"] = round(h_prof["current_elo"] - a_prof["current_elo"], 2)
-                if "rolling_sot" in h_prof and "rolling_sot" in a_prof:
-                    xgb_features["rolling_sot_diff"] = round(h_prof["rolling_sot"] - a_prof["rolling_sot"], 2)
-        except Exception:
-            pass
+        xgb_features = None
+        xgb_model = self.get_active_model("xgboost")
+        if hasattr(xgb_model, "get_match_feature_differentials"):
+            xgb_features = xgb_model.get_match_feature_differentials(c_home, c_away)
+        elif hasattr(xgb_model, "get_team_profile"):
+            h_prof = xgb_model.get_team_profile(c_home)
+            a_prof = xgb_model.get_team_profile(c_away)
+            if h_prof and a_prof:
+                xgb_features = {
+                    "elo_diff": round(h_prof["current_elo"] - a_prof["current_elo"], 1),
+                    "form_pts_diff": (
+                        h_prof["recent_form_points"] - a_prof["recent_form_points"]
+                        if h_prof.get("recent_form_points") is not None and a_prof.get("recent_form_points") is not None
+                        else None
+                    ),
+                    "sot_diff": (
+                        round(h_prof["rolling_sot"] - a_prof["rolling_sot"], 1)
+                        if h_prof.get("rolling_sot") is not None and a_prof.get("rolling_sot") is not None
+                        else None
+                    ),
+                    "rest_days_diff": (
+                        h_prof["days_since_last_match"] - a_prof["days_since_last_match"]
+                        if h_prof.get("days_since_last_match") is not None and a_prof.get("days_since_last_match") is not None
+                        else None
+                    ),
+                }
 
         return {
             "home_team": home_team,
@@ -121,11 +135,7 @@ class PredictionService:
                 "prob_home": xgb_pred["prob_home"],
                 "prob_draw": xgb_pred["prob_draw"],
                 "prob_away": xgb_pred["prob_away"],
-                "features": xgb_features if xgb_features else {
-                    "elo_diff": 84.5,
-                    "rolling_xg_diff": 0.42,
-                    "rolling_sot_diff": 2.1,
-                },
+                "features": xgb_features,
             },
         }
 
@@ -198,21 +208,10 @@ class PredictionService:
         """Return combined profile with Poisson strengths and XGBoost/Elo stats."""
         c_team = canonicalize_team_name(team_name)
         dc_strengths = self.get_team_strength(team_name)
-        xgb_profile = {}
-        try:
-            xgb_model = self.get_active_model("xgboost")
-            if hasattr(xgb_model, "get_team_profile"):
-                xgb_profile = xgb_model.get_team_profile(c_team) or {}
-        except Exception:
-            pass
-
-        if not xgb_profile:
-            xgb_profile = {
-                "current_elo": 1642.5,
-                "rolling_sot": 6.2,
-                "rolling_corners": 7.1,
-                "recent_form_points": 13,
-            }
+        xgb_profile = None
+        xgb_model = self.get_active_model("xgboost")
+        if hasattr(xgb_model, "get_team_profile"):
+            xgb_profile = xgb_model.get_team_profile(c_team)
 
         return {
             "team": team_name,

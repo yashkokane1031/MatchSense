@@ -149,39 +149,7 @@ def list_upcoming_fixtures(db: Session = Depends(get_db)) -> list[FixtureCard]:
             )
         return cards
 
-    # Dynamic fallback using active models when DB is offline or fixtures unpopulated
-    sample_schedule = [
-        ("Arsenal", "Chelsea", "2026-09-19T14:00:00Z", 28, 101),
-        ("Manchester City", "Liverpool", "2026-09-19T16:30:00Z", 28, 102),
-        ("Tottenham Hotspur", "Aston Villa", "2026-09-20T13:00:00Z", 28, 103),
-        ("Newcastle United", "Manchester United", "2026-09-20T15:30:00Z", 28, 104),
-        ("Brighton", "Hull City", "2026-09-20T18:00:00Z", 28, 105),
-        ("Everton", "Fulham", "2026-09-21T19:00:00Z", 28, 106),
-    ]
-    cards = []
-    for home, away, kickoff, gw, fid in sample_schedule:
-        try:
-            comp = _service.predict_comparison(home, away)
-            dc = comp["dixon_coles"]
-            xgb = comp["xgboost"]
-        except Exception:
-            dc = {"prob_home": 0.45, "prob_draw": 0.28, "prob_away": 0.27}
-            xgb = {"prob_home": 0.46, "prob_draw": 0.27, "prob_away": 0.27}
-        cards.append(
-            FixtureCard(
-                id=fid,
-                gameweek=gw,
-                kickoff_time=kickoff,
-                home_team=home,
-                away_team=away,
-                status="SCHEDULED",
-                predictions={
-                    "dixon_coles": dc,
-                    "xgboost": xgb,
-                },
-            )
-        )
-    return cards
+    return []
 
 
 @router.get("/teams", response_model=list[str])

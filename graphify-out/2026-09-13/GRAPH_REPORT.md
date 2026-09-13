@@ -1,16 +1,16 @@
 # Graph Report - MatchSense  (2026-09-13)
 
 ## Corpus Check
-- 150 files · ~96,685 words
+- 154 files · ~99,736 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1440 nodes · 2084 edges · 110 communities (82 shown, 12 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 52 edges (avg confidence: 0.91)
+- 1477 nodes · 2172 edges · 110 communities (85 shown, 9 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 59 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1a4f6501`
+- Built from commit: `5311813c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -18,11 +18,11 @@
 - test_features.py
 - test_api.py
 - PredictionService
-- sync_pipeline.py
+- ingestion.py
 - MatchSense — Modern Frontend Dashboard Design Specification
 - TestDixonColesModel
 - test_pipeline.py
-- BasePredictor
+- XGBoostPredictor
 - ndarray
 - Database Schema & Migrations
 - Phase 2B Design Specification: Advanced Features & XGBoost Classifier
@@ -32,7 +32,7 @@
 - Proposed Changes
 - Settled Decisions
 - MatchSense ⚽
-- _tau
+- dixon_coles.py
 - What Was Completed
 - simulate_betting
 - DixonColesModel
@@ -47,8 +47,8 @@
 - EloEngine
 - Global Constraints
 - 2. Statistical Significance vs Baselines (Primary: Per-Fold Independent)
-- .predict_score_distribution
-- datetime
+- derive_season_from_date
+- prediction.py
 - run_walk_forward_cv
 - compute_rolling_xg
 - MatchSense — Phase 2B Implementation and Evaluation Walkthrough
@@ -61,66 +61,66 @@
 - Tasks
 - 2. Statistical Significance vs Baselines (Primary: Per-Fold Independent)
 - 2. Benchmark Evaluation Results (Dixon-Coles vs Baselines)
-- pipeline.py
-- MatchSense — Multi-Model Comparative Evaluation: XGBoost vs. Dixon-Coles
-- test_sync_pipeline.py
 - build_match_features
-- prediction.py
+- MatchSense — Multi-Model Comparative Evaluation: XGBoost vs. Dixon-Coles
+- sync_pipeline.py
+- TestFeaturePipeline
+- health.py
 - package.json
 - test_api_phase3.py
 - EvaluationReport
 - compilerOptions
 - evaluate.py
-- models/schemas.py
+- TestPoissonProperties
 - simulator/page.tsx
-- api.ts
+- index.ts
 - devDependencies
 - Global Constraints
 - ComparisonReport
-- index.ts
-- seed_data.py
+- constants.ts
+- model_manager.py
 - 2. Key Architectural Invariants & Verified Solutions
 - TestMediumScaleConvergence
-- constants.ts
-- derive_current_season
+- Walkthrough: Two-Pass Joint Optimization & Pipeline Integration Verification
+- datetime
 - Global Constraints
-- derive_season_from_date
+- TestDeriveSeasonFromDate
 - dependencies
 - Proposed Changes
 - api.generated.ts
 - MatchSense — Phase 4 Modern Frontend Dashboard Walkthrough
-- ingestion.py
+- FootballDataClient
 - scripts
 - teams/page.tsx
 - parse_season_csv
-- layout.tsx
+- useHealthStatus.ts
 - MockResizeObserver
-- ModelProbabilityBar.tsx
-- utils.ts
+- vitest
+- .predict_score_distribution
 - MatchSense — Vercel v0 Prototype Brief
 - next.config.mjs
 - next-env.d.ts
-- @vitejs/plugin-react
+- normalize_team
 - main.py
 - MockRecoveryModel
-- MockXGBModel
+- test_ingestion.py
 - TestPredictionEndpoints
-- config.py
 - .is_healthy
-- test_fixture_orm_default_jsonb
 - test_walk_forward.py
+- BasePredictor
+- TestTeamEndpoints
 
 ## God Nodes (most connected - your core abstractions)
-1. `DixonColesModel` - 53 edges
-2. `BasePredictor` - 29 edges
-3. `XGBoostPredictor` - 27 edges
-4. `Fixture` - 22 edges
+1. `DixonColesModel` - 57 edges
+2. `XGBoostPredictor` - 30 edges
+3. `Fixture` - 29 edges
+4. `BasePredictor` - 29 edges
 5. `build_match_features()` - 20 edges
 6. `TestDixonColesModel` - 18 edges
 7. `Base` - 17 edges
 8. `parse_season_csv()` - 17 edges
 9. `derive_current_season()` - 17 edges
-10. `PredictionService` - 16 edges
+10. `compute_form_features()` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `get_model()` --uses--> `BasePredictor`  [INFERRED]
@@ -129,31 +129,31 @@
   backend/api/dependencies.py → ml/models/base.py
 - `test_db()` --uses--> `Base`  [INFERRED]
   tests/integration/test_pipeline.py → backend/core/database.py
-- `test_db()` --uses--> `Base`  [INFERRED]
-  tests/integration/test_sync_pipeline.py → backend/core/database.py
 - `load_matches_from_db()` --uses--> `Match`  [INFERRED]
   ml/data/loader.py → backend/models/schemas.py
+- `test_fixtures_upcoming_with_per_model_freshness()` --calls--> `Fixture`  [EXTRACTED]
+  tests/unit/test_api_phase3.py → backend/models/schemas.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (110 total, 12 thin omitted)
+## Communities (110 total, 9 thin omitted)
 
 ### Community 0 - "test_features.py"
 Cohesion: 0.16
 Nodes (12): compute_h2h_features(), _empty_h2h_features(), DataFrame, Timestamp, Head-to-head feature engineering. Computes historical H2H statistics between…, Compute head-to-head features between two teams. Looks at the last…, Return H2H features with all null values (no historical meetings)., Tests for feature engineering. Covers: form features, H2H features, season-… (+4 more)
 
 ### Community 1 - "test_api.py"
-Cohesion: 0.10
-Nodes (13): Set model reference in ModelManager. Used by tests and lifespan., set_model(), client(), client_no_model(), fixture, Tests for the FastAPI endpoints., Test client with a pre-loaded model., Verify health endpoint returns strictly typed HealthResponse model. (+5 more)
+Cohesion: 0.13
+Nodes (12): Set model reference in ModelManager. Used by tests and lifespan., set_model(), client(), client_no_model(), fixture, Tests for the FastAPI endpoints., Test client with a pre-loaded model., Verify health endpoint returns strictly typed HealthResponse model. (+4 more)
 
 ### Community 2 - "PredictionService"
 Cohesion: 0.16
-Nodes (11): PredictionService, Any, Resolve fixture prediction from cache if fresh, otherwise recompute dynamically., Return sorted list of known teams., Return attack and defense parameters for team., Service providing match prediction operations., Return combined profile with Poisson strengths and XGBoost/Elo stats., Get the model instance for a specific architecture. (+3 more)
+Nodes (11): PredictionService, Any, Resolve fixture prediction from cache if fresh, otherwise recompute dynamically., Service providing match prediction operations., Return sorted list of known teams., Return attack and defense parameters for team., Return combined profile with Poisson strengths and XGBoost/Elo stats., Get the model instance for a specific architecture. (+3 more)
 
-### Community 3 - "sync_pipeline.py"
-Cohesion: 0.14
-Nodes (23): ModelArtifact, Serialized model binary and walk-forward verification manifest., download_season_csv(), load_all_seasons(), Path, Download, parse, and combine all configured seasons. Args: seasons: List of…, Download a season CSV from football-data.co.uk. Args: season_code: Two-digit…, check_gate_2a_dixon_coles() (+15 more)
+### Community 3 - "ingestion.py"
+Cohesion: 0.20
+Nodes (11): compute_implied_probabilities(), download_season_csv(), load_all_seasons(), DataFrame, Path, Data ingestion pipeline for football-data.co.uk CSVs. Downloads, parses,…, Compute bookmaker implied probabilities from decimal odds. Removes the…, Download, parse, and combine all configured seasons. Args: seasons: List of… (+3 more)
 
 ### Community 4 - "MatchSense — Modern Frontend Dashboard Design Specification"
 Cohesion: 0.07
@@ -164,16 +164,16 @@ Cohesion: 0.06
 Nodes (17): All score probabilities must be >= 0., Most likely score should be reasonable (not negative, not absurd)., Predicting with unknown team should raise ValueError when allow_unknown=False., Predicting with unknown team should succeed when allow_unknown=True., Predicting without fit() should raise RuntimeError., Save and load should produce identical predictions., get_team_strengths() should return dict for all teams., get_model_info() should return expected metadata. (+9 more)
 
 ### Community 6 - "test_pipeline.py"
-Cohesion: 0.17
-Nodes (13): load_matches_from_db(), DataFrame, Session, Database loader utilities for matches. Provides functions to save match…, Save match records from a DataFrame into the database. Skips matches that…, Load matches from database into a pandas DataFrame. Returns DataFrame…, save_matches_to_db(), fixture (+5 more)
+Cohesion: 0.19
+Nodes (12): load_matches_from_db(), DataFrame, Session, Save match records from a DataFrame into the database. Skips matches that…, Load matches from database into a pandas DataFrame. Returns DataFrame…, save_matches_to_db(), fixture, End-to-end integration tests for the MatchSense pipeline. Tests the full… (+4 more)
 
-### Community 7 - "BasePredictor"
-Cohesion: 0.08
-Nodes (26): ABC, BasePredictor, DataFrame, ndarray, Abstract base class for prediction models. All models (Dixon-Coles, XGBoost in…, Interface that every prediction model must implement., Fit the model on historical match data. Args: matches: DataFrame with at…, Predict outcome probabilities for a match. Args: home_team: Canonical name of… (+18 more)
+### Community 7 - "XGBoostPredictor"
+Cohesion: 0.10
+Nodes (16): DataFrame, Predict outcome probabilities for a match., Return normalized feature importances from the booster., Discriminative match outcome predictor using regularized gradient-boosted trees., Return metadata about the fitted XGBoost model., Index precomputed bounded features for fast lookup during CV., Return model metadata for health endpoint and status reporting., Fit XGBoost classifier on historical match window. (+8 more)
 
 ### Community 8 - "ndarray"
-Cohesion: 0.16
-Nodes (10): DataFrame, ndarray, Pack model parameters into a flat vector for the optimizer. Layout: [alpha_2,…, Unpack a flat parameter vector into named parameters. Returns: Tuple of…, Vectorized negative log-likelihood (to minimize). L = -Σ w(t) * [log(τ) +…, Return the current parameter vector for warm-starting a subsequent fit.…, Fit the Dixon-Coles model on historical match data. Args: matches: DataFrame…, Compute exponential time-decay weights for each match. More recent matches… (+2 more)
+Cohesion: 0.15
+Nodes (10): DataFrame, ndarray, Pack model parameters into a flat vector for the optimizer. Layout: [alpha_2,…, Unpack a flat parameter vector into named parameters. Supports standard (Pass…, Vectorized negative log-likelihood (to minimize). L = -Σ w(t) * [log(τ) +…, Return the current parameter vector for warm-starting a subsequent fit.…, Fit the Dixon-Coles model on historical match data. Args: matches: DataFrame…, Compute exponential time-decay weights for each match. More recent matches… (+2 more)
 
 ### Community 9 - "Database Schema & Migrations"
 Cohesion: 0.29
@@ -199,9 +199,9 @@ Nodes (21): Architecture Overview, Core, Data Sources, Deployment, Documentation
 Cohesion: 0.11
 Nodes (18): 1. Installation, 2. Environment Configuration, 3. Seed Data & Fit Dixon-Coles Model, 4. Run the API Server, API Endpoints, Architecture, Head-to-Head Match Prediction, Health Check (+10 more)
 
-### Community 31 - "_tau"
-Cohesion: 0.11
-Nodes (15): given, Dixon-Coles correction factor for low-scoring matches. Adjusts the joint…, _tau(), settings, τ must be positive for typical football scoring rates and empirical ρ., τ must be exactly 1.0 for all scores where both teams score 2+., Tests for the Dixon-Coles model. Covers: tau correction, parameter packing,…, Test the Dixon-Coles low-score correction function. (+7 more)
+### Community 31 - "dixon_coles.py"
+Cohesion: 0.13
+Nodes (13): Dixon-Coles model for football match prediction. Implements the Dixon & Coles…, Dixon-Coles correction factor for low-scoring matches. Adjusts the joint…, _tau(), Property-based tests for Poisson model properties. Uses Hypothesis to verify…, Tests for the Dixon-Coles model. Covers: tau correction, parameter packing,…, Test the Dixon-Coles low-score correction function., 0-0: correction depends on lambda, mu, rho., 0-1: correction depends on lambda and rho. (+5 more)
 
 ### Community 32 - "What Was Completed"
 Cohesion: 0.15
@@ -213,7 +213,7 @@ Nodes (15): BacktestResult, DataFrame, Financial backtesting engine with pre-gam
 
 ### Community 34 - "DixonColesModel"
 Cohesion: 0.09
-Nodes (17): DixonColesModel, Path, Dixon-Coles model for football match prediction. Implements the Dixon & Coles…, Return metadata about the fitted model., Serialize the fitted model to disk. Args: path: File path to save to (typically…, Deserialize a fitted model from disk. Args: path: File path to load from.…, Dixon-Coles model with time-decay weighting. Parameters are estimated via…, Initialize the model. Args: xi: Time-decay rate per day. Higher = more… (+9 more)
+Nodes (17): DixonColesModel, Path, Return metadata about the fitted model., Serialize the fitted model to disk. Args: path: File path to save to (typically…, Deserialize a fitted model from disk. Args: path: File path to load from.…, Dixon-Coles model with time-decay weighting. Parameters are estimated via…, Initialize the model. Args: xi: Time-decay rate per day. Higher = more…, main() (+9 more)
 
 ### Community 35 - "MatchSense — Evaluation Suite Design Spec (Phase 2A)"
 Cohesion: 0.07
@@ -224,8 +224,8 @@ Cohesion: 0.12
 Nodes (23): evaluate_significance_suite(), mcnemar_accuracy_test(), McNemarResult, Any, DataFrame, ndarray, Hypothesis testing for comparative model evaluation., Paired Wilcoxon signed-rank test on match-by-match RPS differences. Uses Pratt… (+15 more)
 
 ### Community 37 - "predictions.py"
-Cohesion: 0.11
-Nodes (29): compare_predictions(), ComparePredictionResponse, FixtureCard, get_team_profile(), get_team_strength(), HeadToHeadRequest, list_teams(), list_upcoming_fixtures() (+21 more)
+Cohesion: 0.09
+Nodes (32): compare_predictions(), ComparePredictionResponse, FixtureCard, get_team_profile(), get_team_strength(), HeadToHeadRequest, list_teams(), list_upcoming_fixtures() (+24 more)
 
 ### Community 38 - "Evaluation Core (`ml/evaluation/`)"
 Cohesion: 0.12
@@ -248,8 +248,8 @@ Cohesion: 0.18
 Nodes (10): 1. Resolution of Data Churn & Season Scope, 2. Model Training & Optimization Performance, 3. Team Strength Sanity Check, 4. Real Matchup Smoke Tests, 5. Verification & Code Quality Status, Bottom 5 Defenses (Highest Conceded Expected Goals $\beta$), Fitted Global Parameters, MatchSense — Phase 1 Implementation & Training Walkthrough (+2 more)
 
 ### Community 43 - "EloEngine"
-Cohesion: 0.09
-Nodes (20): compute_window_elo(), EloEngine, DataFrame, Timestamp, Window-anchored Elo rating engine with dynamic margin-of-victory and empirical…, Compute expected outcome score probabilities for home and away teams. Args:…, Dynamic multiplier based on margin of victory following World Football Elo…, Apply inter-season mean-reversion and empirical Q0.25 promoted entry. Surviving… (+12 more)
+Cohesion: 0.13
+Nodes (15): compute_window_elo(), EloEngine, DataFrame, Timestamp, Window-anchored Elo rating engine with dynamic margin-of-victory and empirical…, Compute expected outcome score probabilities for home and away teams. Args:…, Dynamic multiplier based on margin of victory following World Football Elo…, Apply inter-season mean-reversion and empirical Q0.25 promoted entry. Surviving… (+7 more)
 
 ### Community 44 - "Global Constraints"
 Cohesion: 0.20
@@ -259,17 +259,17 @@ Nodes (9): Evaluation Suite (Phase 2A) Implementation Plan, Global Constraints, 
 Cohesion: 0.18
 Nodes (10): 1. Out-of-Sample Performance by Season (Rolling 4-Season Window), 2. Statistical Significance vs Baselines (Primary: Per-Fold Independent), 3. Financial Simulation & ROI (Edge >= 5%), 4. Calibration & Reliability Summary, Away Outcome Reliability Bins (1,140 Matches), Fold Season: `2023-24`, Fold Season: `2024-25`, Fold Season: `2025-26` (+2 more)
 
-### Community 46 - ".predict_score_distribution"
-Cohesion: 0.24
-Nodes (5): Predict outcome probabilities for a match., Predict the joint score probability distribution., Return attack/defense strengths for all teams., Raise if model has not been fitted., Raise if either team is unknown.
+### Community 46 - "derive_season_from_date"
+Cohesion: 0.15
+Nodes (14): derive_season_from_date(), derive_training_window(), Dynamic Premier League season identification. Single source of truth for…, Return the N-season sliding window ending at current_code. Args: current_code:…, Convert a season start year to the 4-digit code used by football-data.co.uk.…, Convert a season start year to a human-readable label. Example: 2026 → "2026-27", Convert a 4-digit season code back to a full start year. Example: "2627" → 2026…, Derive the active PL season from the system date. This is the **fallback** path… (+6 more)
 
-### Community 47 - "datetime"
-Cohesion: 0.13
-Nodes (16): ModelManager, ModelMetadata, ModelManager for zero-downtime hot-reloading of ML models from PostgreSQL., Startup hook: attempt DB reload, falling back to local files., Metadata tracking loaded model version, active timestamps, and manifests., Manages hot-reloading in-memory models backed by PostgreSQL artifacts., Register or atomically swap an in-memory model reference., Retrieve active in-memory model, checking polling TTL first. (+8 more)
+### Community 47 - "prediction.py"
+Cohesion: 0.29
+Nodes (5): Prediction service encapsulating prediction domain logic., DataFrame, Pandera validation schemas for match data. Validates data integrity at…, Check that FTR is consistent with FTHG/FTAG., _result_matches_goals()
 
 ### Community 48 - "run_walk_forward_cv"
-Cohesion: 0.10
-Nodes (31): compute_accuracy(), compute_brier_score(), compute_log_loss(), compute_rps(), ndarray, Mathematical evaluation metrics for football match prediction., Compute multi-category Brier score. Args: probs: Array of shape (N, 3).…, Compute multi-class cross-entropy log-loss. Args: probs: Array of shape (N, 3).… (+23 more)
+Cohesion: 0.08
+Nodes (38): compute_accuracy(), compute_brier_score(), compute_log_loss(), compute_rps(), ndarray, Mathematical evaluation metrics for football match prediction., Compute multi-category Brier score. Args: probs: Array of shape (N, 3).…, Compute multi-class cross-entropy log-loss. Args: probs: Array of shape (N, 3).… (+30 more)
 
 ### Community 49 - "compute_rolling_xg"
 Cohesion: 0.33
@@ -315,33 +315,33 @@ Nodes (10): 1. Out-of-Sample Performance by Season (Rolling 4-Season Window), 2.
 Cohesion: 0.20
 Nodes (9): 1. Phase 2A Architecture Overview, 2. Benchmark Evaluation Results (Dixon-Coles vs Baselines), 3. Go / No-Go Sanity Gates Verification, 4. Code Quality & Test Suite Status, Calibration, Financial Backtest & Betting Simulation ($\text{EV} \ge 0.05$), MatchSense — Phase 1 & Phase 2A Implementation and Evaluation Walkthrough, Out-of-Sample Performance by Season (Rolling 4-Season Window) (+1 more)
 
-### Community 60 - "pipeline.py"
-Cohesion: 0.27
-Nodes (10): compute_home_away_splits(), compute_season_features(), compute_temporal_features(), DataFrame, Timestamp, Recent form and temporal feature engineering. Computes per-team rolling…, Compute home vs away performance splits. Args: matches: Full matches DataFrame.…, Compute temporal features: fatigue, league position, promotion status. Args:… (+2 more)
+### Community 60 - "build_match_features"
+Cohesion: 0.19
+Nodes (17): compute_home_away_splits(), compute_season_features(), compute_temporal_features(), DataFrame, Timestamp, Recent form and temporal feature engineering. Computes per-team rolling…, Compute home vs away performance splits. Args: matches: Full matches DataFrame.…, Compute temporal features: fatigue, league position, promotion status. Args:… (+9 more)
 
 ### Community 61 - "MatchSense — Multi-Model Comparative Evaluation: XGBoost vs. Dixon-Coles"
 Cohesion: 0.20
 Nodes (9): 1. Executive Summary & Out-of-Sample Performance, 2. Direct Head-to-Head Comparison: XGBoost vs. Dixon-Coles, 3. Performance vs. Market Consensus Lines (1,140 Matches), 4. Probability Calibration & Reliability Summary, 5. Financial Simulation & ROI (Edge >= 5%), 6. Automated Sanity Verification Gates, Away Outcome Reliability Bins Breakdown (1,140 Matches), MatchSense — Multi-Model Comparative Evaluation: XGBoost vs. Dixon-Coles (+1 more)
 
-### Community 62 - "test_sync_pipeline.py"
-Cohesion: 0.14
-Nodes (18): Fixture, Match, Upcoming scheduled Premier League fixture with cached predictions., A single Premier League match with result, stats, and bookmaker odds., Score completed matches against pre-match fixture predictions grouped by GW., Ingest latest completed matches and upcoming fixtures into DB. Returns new…, run_phase_a_ingestion(), score_gate_2b_audit() (+10 more)
+### Community 62 - "sync_pipeline.py"
+Cohesion: 0.05
+Nodes (64): Run migrations in 'offline' mode. This configures the context with just a URL…, Run migrations in 'online' mode. In this scenario we need to create an Engine…, run_migrations_offline(), run_migrations_online(), Pydantic settings for MatchSense configuration. Loads from environment…, Application configuration loaded from environment variables., Settings, Base (+56 more)
 
-### Community 63 - "build_match_features"
-Cohesion: 0.16
-Nodes (12): build_feature_matrix(), build_match_features(), DataFrame, Timestamp, Build feature vectors for ALL matches in the dataset. Processes matches in…, Build the complete feature vector for a single match. All features use ONLY…, Predict outcome probabilities for a match., Test the full feature pipeline orchestrator. (+4 more)
+### Community 63 - "TestFeaturePipeline"
+Cohesion: 0.25
+Nodes (5): Test the full feature pipeline orchestrator., Pipeline should return features for both teams plus H2H., Pipeline should return rolling shot and corner statistics for both teams., xG metrics must be separate columns, never overwriting or mingling with shot…, TestFeaturePipeline
 
-### Community 64 - "prediction.py"
-Cohesion: 0.21
-Nodes (11): get_model(), Dependency injection for FastAPI routes. Provides model references and access…, Get the loaded model instance from ModelManager., health_check(), HealthResponse, ModelStatus, BaseModel, get (+3 more)
+### Community 64 - "health.py"
+Cohesion: 0.29
+Nodes (10): get_model(), Get the loaded model instance from ModelManager., FixtureFeedStatus, health_check(), HealthResponse, ModelStatus, BaseModel, get (+2 more)
 
 ### Community 65 - "package.json"
-Cohesion: 0.11
-Nodes (18): name, private, version, class-variance-authority, cmdk, jsdom, lucide-react, openapi-typescript (+10 more)
+Cohesion: 0.08
+Nodes (21): name, private, version, class-variance-authority, clsx, cmdk, jsdom, lucide-react (+13 more)
 
 ### Community 66 - "test_api_phase3.py"
-Cohesion: 0.13
-Nodes (4): get_db(), Session, Yield a database session, ensuring it's closed after use., MockDCModel
+Cohesion: 0.10
+Nodes (5): MockDCModel, MockXGBModel, fixture, setup_models(), test_fixtures_upcoming_with_per_model_freshness()
 
 ### Community 67 - "EvaluationReport"
 Cohesion: 0.19
@@ -355,17 +355,17 @@ Nodes (18): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 Cohesion: 0.23
 Nodes (13): Namespace, _build_model_report(), _compute_head_to_head(), _compute_market_comparison(), main(), parse_args(), Any, DataFrame (+5 more)
 
-### Community 70 - "models/schemas.py"
-Cohesion: 0.12
-Nodes (17): Run migrations in 'offline' mode. This configures the context with just a URL…, Run migrations in 'online' mode. In this scenario we need to create an Engine…, run_migrations_offline(), run_migrations_online(), Base, create_tables(), SQLAlchemy database engine and session management. Uses synchronous SQLAlchemy…, Base class for all SQLAlchemy ORM models. (+9 more)
+### Community 70 - "TestPoissonProperties"
+Cohesion: 0.14
+Nodes (10): given, settings, Property-based tests for Dixon-Coles model., τ must be positive for typical football scoring rates and empirical ρ., τ must be exactly 1.0 for all scores where both teams score 2+., Score distribution must sum to ~1.0 for any valid matchup., All probabilities must be >= 0., P(H) + P(D) + P(A) must sum to ~1.0 for any matchup. (+2 more)
 
 ### Community 71 - "simulator/page.tsx"
-Cohesion: 0.17
-Nodes (12): SimulatorPage(), FeatureDiffTable(), ModelComparisonBlock(), ModelComparisonBlockProps, computeCellAlpha(), ScoreHeatmap(), ScoreHeatmapProps, TeamSelector() (+4 more)
+Cohesion: 0.21
+Nodes (10): SimulatorPage(), FeatureDiffTable(), ModelComparisonBlock(), ModelComparisonBlockProps, computeCellAlpha(), ScoreHeatmap(), ScoreHeatmapProps, ComparePredictionResponse (+2 more)
 
-### Community 72 - "api.ts"
-Cohesion: 0.22
-Nodes (11): HealthBadge(), useHealthStatus(), api, ApiError, ClientHealthStatus, HealthResponse, HealthStatusType, server (+3 more)
+### Community 72 - "index.ts"
+Cohesion: 0.18
+Nodes (12): dynamic, TeamProfilePage(), api, ApiError, ClientHealthStatus, HealthResponse, HealthStatusType, ModelPredictionBlock (+4 more)
 
 ### Community 73 - "devDependencies"
 Cohesion: 0.14
@@ -379,37 +379,37 @@ Nodes (8): Global Constraints, Phase 3: Live Serving & Automation Pipeline Imple
 Cohesion: 0.29
 Nodes (5): ComparisonReport, Print markdown report to stdout., Multi-model comparative evaluation report for XGBoost vs Dixon-Coles., Generate comprehensive GitHub-flavored Markdown comparative scorecard., Print comparative markdown report to stdout.
 
-### Community 76 - "index.ts"
-Cohesion: 0.19
-Nodes (12): dynamic, FixtureCard(), FixtureGrid(), FixtureGridProps, GameweekHero(), GameweekHeroProps, MOCK_FIXTURES_GW28, FixtureCard (+4 more)
+### Community 76 - "constants.ts"
+Cohesion: 0.13
+Nodes (16): dynamic, FixtureFilter(), FixtureFilterProps, FixtureGrid(), FixtureGridProps, GameweekHero(), GameweekHeroProps, TeamSelector() (+8 more)
 
-### Community 77 - "seed_data.py"
-Cohesion: 0.22
-Nodes (7): DataFrame, Pandera validation schemas for match data. Validates data integrity at…, Check that FTR is consistent with FTHG/FTAG., _result_matches_goals(), main(), Seed data script: download historical data, validate, fit model. Usage: uv run…, Download data, validate, fit model, and save.
+### Community 77 - "model_manager.py"
+Cohesion: 0.14
+Nodes (13): ModelManager, ModelMetadata, ModelManager for zero-downtime hot-reloading of ML models from PostgreSQL., Startup hook: attempt DB reload, falling back to local files., Metadata tracking loaded model version, active timestamps, and manifests., Manages hot-reloading in-memory models backed by PostgreSQL artifacts., Register or atomically swap an in-memory model reference., Retrieve active in-memory model, checking polling TTL first. (+5 more)
 
 ### Community 79 - "2. Key Architectural Invariants & Verified Solutions"
 Cohesion: 0.17
 Nodes (11): 1. System Architecture & Components Delivered, 2.1 Decoupled 3-Phase Execution Boundaries, 2.2 Atomic JSONB Partial Merging, 2.3 Per-Model Freshness & Dynamic Dynamic Recomputation, 2.4 In-Memory Zero-Downtime Hot-Reloading (`ModelManager`), 2.5 Strict Refusal of Unvalidated Consensus Blending, 2. Key Architectural Invariants & Verified Solutions, 3.1 Test Suite Breakdown (114 Passed) (+3 more)
 
 ### Community 80 - "TestMediumScaleConvergence"
-Cohesion: 0.25
-Nodes (6): DataFrame, fixture, Test model convergence at realistic scale. This catches optimization bugs that…, Generate a synthetic 25-team, 500-match dataset., Model should converge on 25-team, 500-match dataset., TestMediumScaleConvergence
+Cohesion: 0.22
+Nodes (7): DataFrame, fixture, Test model convergence at realistic scale. This catches optimization bugs that…, Generate a synthetic 25-team, 500-match dataset., Model should converge on 25-team, 500-match dataset., Create a stable base dataset of 6 teams with 15 matches each., TestMediumScaleConvergence
 
-### Community 81 - "constants.ts"
+### Community 81 - "Walkthrough: Two-Pass Joint Optimization & Pipeline Integration Verification"
+Cohesion: 0.18
+Nodes (10): 1. Dixon-Coles Two-Pass Joint Optimization (with Parameter Exclusion), 2. End-to-End Integration Test for `main()`, 3. XGBoost Transitional Handling at $n=3$, 4. Verification Summary, Implementation: `test_main_end_to_end_pipeline_wiring`, Observed Parameter Shifts on Real 2026-27 League Data, Principled Architectural Solution, Problem (+2 more)
+
+### Community 82 - "datetime"
 Cohesion: 0.16
-Nodes (10): dynamic, TeamProfilePage(), FixtureFilter(), FixtureFilterProps, ALIAS_LOOKUP, BASE_PREMIER_LEAGUE_TEAMS, HISTORICAL_TEAMS, PREMIER_LEAGUE_TEAMS (+2 more)
-
-### Community 82 - "derive_current_season"
-Cohesion: 0.13
-Nodes (13): default_training_seasons(), Compute the 4-season training window ending at the current season. Derives the…, derive_current_season(), Return (season_code, season_label) for the active PL season. Uses the API-…, When API reports a season, it wins over date-math., When API season is None, date-math fallback activates., Empty API strings are treated as absent., Early Aug: date fallback says 2526, but API reports 2627 → API wins. (+5 more)
+Nodes (14): datetime, default_training_seasons(), Compute the 4-season training window ending at the current season. Derives the…, derive_current_season(), Return (season_code, season_label) for the active PL season. Uses the API-…, When API reports a season, it wins over date-math., When API season is None, date-math fallback activates., Empty API strings are treated as absent. (+6 more)
 
 ### Community 83 - "Global Constraints"
 Cohesion: 0.15
 Nodes (12): Global Constraints, MatchSense Modern Frontend Dashboard Implementation Plan, Plan Self-Review Checklist, Task 1: Backend HealthResponse Hardening & Offline OpenAPI Exporter, Task 2: Frontend Scaffolding, Tailwind v4 Design Tokens & OpenAPI Typegen, Task 3: Typed API Client, Resilience Handling & Health Status Hook, Task 4: Mathematical Visualizations — Dual-Model Probability Bar & 5x5 Poisson Heatmap, Task 5: Route 1 — Upcoming Gameweek Fixtures Dashboard (`/`) (+4 more)
 
-### Community 84 - "derive_season_from_date"
-Cohesion: 0.08
-Nodes (23): derive_season_from_date(), derive_training_window(), Dynamic Premier League season identification. Single source of truth for…, Return the N-season sliding window ending at current_code. Args: current_code:…, Convert a season start year to the 4-digit code used by football-data.co.uk.…, Convert a season start year to a human-readable label. Example: 2026 → "2026-27", Convert a 4-digit season code back to a full start year. Example: "2627" → 2026…, Derive the active PL season from the system date. This is the **fallback** path… (+15 more)
+### Community 84 - "TestDeriveSeasonFromDate"
+Cohesion: 0.12
+Nodes (9): Tests for the date-based fallback path., Sep 2026 → 2026-27 season., Mar 2027 → still 2026-27 season., Early Aug (< Aug 15) → previous season (pre-season)., Mid-Aug (>= Aug 15) → new season., Jul 2026 → still 2025-26 season (pre-season)., Jan 2027 → 2026-27 season (mid-season)., May 2026 → 2025-26 season (end of season). (+1 more)
 
 ### Community 85 - "dependencies"
 Cohesion: 0.15
@@ -427,9 +427,9 @@ Nodes (5): components, $defs, operations, paths, webhooks
 Cohesion: 0.12
 Nodes (16): 1. System Architecture & Components Delivered, 2.1 Issue Diagnosis, 2.2 Fixes Applied, 2.3 Result, 2.4 Comprehensive Premier League Team Alias Normalization, 2. Live Runtime Integration & Offline Snapshot Resolution, 3.1 Zero-Cost Offline OpenAPI Type Generation, 3.2 Strictly Bounded Mathematical Visualizations (+8 more)
 
-### Community 89 - "ingestion.py"
-Cohesion: 0.17
-Nodes (12): FootballDataClient, Football-Data.org API client for upcoming Premier League fixtures., Client for querying Football-Data.org Premier League endpoints., Fetch scheduled fixtures and return normalized fixture dictionaries., normalize_football_data_org_name(), Data ingestion pipeline for football-data.co.uk CSVs. Downloads, parses,…, Map Football-Data.org official club names to MatchSense canonical names., normalize_team() (+4 more)
+### Community 89 - "FootballDataClient"
+Cohesion: 0.24
+Nodes (8): FootballDataClient, Football-Data.org API client for upcoming Premier League fixtures., Client for querying Football-Data.org Premier League endpoints., Fetch scheduled fixtures and return normalized fixture dictionaries., normalize_football_data_org_name(), Map Football-Data.org official club names to MatchSense canonical names., test_football_data_client_fetch_scheduled(), test_normalize_football_data_org_names()
 
 ### Community 90 - "scripts"
 Cohesion: 0.25
@@ -440,52 +440,64 @@ Cohesion: 0.18
 Nodes (8): dynamic, ModelsPage(), dynamic, CalibrationBin, CalibrationChart(), LeagueStrengthScatter(), TeamScatterPoint, recharts
 
 ### Community 92 - "parse_season_csv"
-Cohesion: 0.11
-Nodes (16): compute_implied_probabilities(), normalize_team_name(), parse_season_csv(), DataFrame, Parse a football-data.co.uk CSV into a cleaned DataFrame. Handles both dd/mm/yy…, Compute bookmaker implied probabilities from decimal odds. Removes the…, Normalize a team name to its canonical form., Unit tests for data ingestion, normalization, and validation. (+8 more)
+Cohesion: 0.23
+Nodes (6): parse_season_csv(), Parse a football-data.co.uk CSV into a cleaned DataFrame. Handles both dd/mm/yy…, Test parsing and cleaning of football-data.co.uk CSVs., Test Pandera schema validation on match data., TestCSVParser, TestPanderaValidation
 
-### Community 93 - "layout.tsx"
-Cohesion: 0.40
-Nodes (3): metadata, Navbar(), next
+### Community 93 - "useHealthStatus.ts"
+Cohesion: 0.29
+Nodes (5): metadata, HealthBadge(), Navbar(), useHealthStatus(), next
+
+### Community 95 - "vitest"
+Cohesion: 0.26
+Nodes (7): ModelProbabilityBar(), ModelProbabilityBarProps, FixtureCard(), server, msw, @testing-library/react, vitest
+
+### Community 96 - ".predict_score_distribution"
+Cohesion: 0.24
+Nodes (5): Predict outcome probabilities for a match., Predict the joint score probability distribution., Return attack/defense strengths for all teams., Raise if model has not been fitted., Raise if either team is unknown.
+
+### Community 100 - "normalize_team"
+Cohesion: 0.25
+Nodes (6): normalize_team(), Single source of truth for Premier League team name normalization across…, Normalize any team name variation to MatchSense canonical representation., Any, Return team profile with current Elo, rolling form, and shot metrics. Returns…, Extract honest feature differentials for head-to-head match comparison. Returns…
 
 ### Community 102 - "main.py"
-Cohesion: 0.27
+Cohesion: 0.22
 Nodes (9): create_app(), lifespan(), FastAPI application factory for MatchSense. Loads the fitted Dixon-Coles model…, Initialize model manager at startup and log status., Create and configure the FastAPI application., FastAPI, export_openapi(), Export FastAPI OpenAPI schema to frontend/openapi.json offline. (+1 more)
 
-### Community 106 - "config.py"
-Cohesion: 0.40
-Nodes (4): Pydantic settings for MatchSense configuration. Loads from environment…, Application configuration loaded from environment variables., Settings, BaseSettings
+### Community 104 - "test_ingestion.py"
+Cohesion: 0.32
+Nodes (5): normalize_team_name(), Normalize a team name to its canonical form., Unit tests for data ingestion, normalization, and validation., Test mapping of raw names to canonical team names., TestTeamNameNormalization
 
 ### Community 107 - ".is_healthy"
 Cohesion: 0.40
 Nodes (3): Any, Return loaded status and versions for health checks., Return human-readable metadata about the model instance. Optional. Subclasses…
 
-### Community 108 - "test_fixture_orm_default_jsonb"
-Cohesion: 0.67
-Nodes (3): Session, test_fixture_orm_default_jsonb(), test_model_artifact_orm()
-
 ### Community 109 - "test_walk_forward.py"
-Cohesion: 0.22
-Nodes (8): fixture, Unit tests for rolling fixed-window walk-forward cross validation., Create 5 teams across 2 small test seasons (20 matches per season)., Walk forward CV runs on test season using rolling 1-season window., Walk forward CV runs identically with XGBoostPredictor without leakage., synthetic_seasons_data(), test_walk_forward_execution(), test_walk_forward_execution_with_xgboost()
+Cohesion: 0.29
+Nodes (6): fixture, Unit tests for rolling fixed-window walk-forward cross validation., Create 5 teams across 2 small test seasons (20 matches per season)., Walk forward CV runs on test season using rolling 1-season window., synthetic_seasons_data(), test_walk_forward_execution()
+
+### Community 112 - "BasePredictor"
+Cohesion: 0.12
+Nodes (12): ABC, Dependency injection for FastAPI routes. Provides model references and access…, BasePredictor, DataFrame, ndarray, Abstract base class for prediction models. All models (Dixon-Coles, XGBoost in…, Interface that every prediction model must implement., Fit the model on historical match data. Args: matches: DataFrame with at… (+4 more)
 
 ## Knowledge Gaps
-- **385 isolated node(s):** `nextConfig`, `name`, `version`, `private`, `dev` (+380 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 828 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **392 isolated node(s):** `nextConfig`, `name`, `version`, `private`, `dev` (+387 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 845 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DixonColesModel` connect `DixonColesModel` to `sync_pipeline.py`, `evaluate.py`, `main.py`, `BasePredictor`, `ndarray`, `Database Schema & Migrations`, `test_pipeline.py`, `TestDixonColesModel`, `seed_data.py`, `.predict_score_distribution`, `datetime`, `TestMediumScaleConvergence`, `test_walk_forward.py`, `_tau`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
-- **Why does `XGBoostPredictor` connect `BasePredictor` to `test_api.py`, `PredictionService`, `sync_pipeline.py`, `evaluate.py`, `EloEngine`, `test_walk_forward.py`, `build_match_features`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Why does `BasePredictor` connect `BasePredictor` to `prediction.py`, `test_api.py`, `PredictionService`, `DixonColesModel`, `.is_healthy`, `datetime`, `run_walk_forward_cv`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
-- **Are the 7 inferred relationships involving `DixonColesModel` (e.g. with `ModelManager` and `main()`) actually correct?**
-  _`DixonColesModel` has 7 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `DixonColesModel` connect `DixonColesModel` to `.predict_score_distribution`, `evaluate.py`, `main.py`, `test_pipeline.py`, `ndarray`, `Database Schema & Migrations`, `TestPoissonProperties`, `TestDixonColesModel`, `model_manager.py`, `test_walk_forward.py`, `BasePredictor`, `run_walk_forward_cv`, `TestMediumScaleConvergence`, `sync_pipeline.py`, `dixon_coles.py`?**
+  _High betweenness centrality (0.082) - this node is a cross-community bridge._
+- **Why does `XGBoostPredictor` connect `XGBoostPredictor` to `test_api.py`, `PredictionService`, `normalize_team`, `evaluate.py`, `test_walk_forward.py`, `BasePredictor`, `run_walk_forward_cv`, `build_match_features`, `sync_pipeline.py`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `BasePredictor` connect `BasePredictor` to `health.py`, `test_api.py`, `PredictionService`, `DixonColesModel`, `XGBoostPredictor`, `.is_healthy`, `model_manager.py`, `prediction.py`, `run_walk_forward_cv`, `build_match_features`, `dixon_coles.py`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Are the 8 inferred relationships involving `DixonColesModel` (e.g. with `ModelManager` and `main()`) actually correct?**
+  _`DixonColesModel` has 8 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 16 inferred relationships involving `datetime` (e.g. with `setup_models()` and `test_model_manager_poll_database_trigger_reload()`) actually correct?**
   _`datetime` has 16 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 11 inferred relationships involving `Fixture` (e.g. with `health_check()` and `list_upcoming_fixtures()`) actually correct?**
+  _`Fixture` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 6 inferred relationships involving `BasePredictor` (e.g. with `get_model()` and `set_model()`) actually correct?**
   _`BasePredictor` has 6 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 7 inferred relationships involving `Fixture` (e.g. with `list_upcoming_fixtures()` and `PredictionService`) actually correct?**
-  _`Fixture` has 7 INFERRED edges - model-reasoned connections that need verification._

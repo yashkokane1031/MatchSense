@@ -175,6 +175,8 @@ def run_phase_a_ingestion(
             existing_f.kickoff_time = kickoff
             existing_f.gameweek = f["gameweek"]
             existing_f.status = f["status"]
+            existing_f.home_team = f["home_team"]
+            existing_f.away_team = f["away_team"]
 
     session.commit()
     logger.info("Phase A committed successfully. Ingested %d new matches.", len(new_matches))

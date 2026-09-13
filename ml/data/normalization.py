@@ -77,6 +77,7 @@ TEAM_CANONICAL_MAP: dict[str, str] = {
     # Hull (2026-27 Promoted)
     "hull city": "Hull",
     "hull city fc": "Hull",
+    "hull city afc": "Hull",
     "hull": "Hull",
 
     # Sheffield United
@@ -97,6 +98,11 @@ TEAM_CANONICAL_MAP: dict[str, str] = {
     # Burnley
     "burnley fc": "Burnley",
     "burnley": "Burnley",
+
+    # Sunderland
+    "sunderland afc": "Sunderland",
+    "sunderland fc": "Sunderland",
+    "sunderland": "Sunderland",
 
     # Standard FC suffixes
     "arsenal fc": "Arsenal",
@@ -121,7 +127,7 @@ def normalize_team(raw_name: str) -> str:
     if lower in TEAM_CANONICAL_MAP:
         return TEAM_CANONICAL_MAP[lower]
     # Suffix stripping fallback
-    stripped = cleaned.replace(" FC", "").replace("AFC ", "").strip()
+    stripped = cleaned.replace(" AFC", "").replace("AFC ", "").replace(" FC", "").strip()
     if stripped.lower() in TEAM_CANONICAL_MAP:
         return TEAM_CANONICAL_MAP[stripped.lower()]
     return stripped

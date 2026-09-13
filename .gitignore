@@ -61,3 +61,6 @@ frontend/out/
 # Graphify cache
 graphify-out/cache/
 
+# Scratch scripts
+scratch/
+

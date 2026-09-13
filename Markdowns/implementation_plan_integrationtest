@@ -1,0 +1,73 @@
+# Implementation Plan: Two-Pass Joint Optimization & End-to-End Pipeline Integration Test
+
+This plan addresses three items:
+1. **Methodological soundness of Dixon-Coles small-sample shrinkage**: Replace post-hoc parameter substitution with a two-pass joint optimization where collapsed parameters are pinned at empirical priors in `bounds` and the entire system ($\gamma$, $\rho$, all teams) is re-optimized warm-started from Pass 1.
+2. **End-to-end integration test for `main()`**: Add an integration test that executes `scripts.sync_pipeline.main()` end-to-end against a test database with mocked external HTTP calls, validating the glue code and ensuring matches, fixtures, and model artifacts are written and active.
+3. **Verification of XGBoost transitional handling at $n=3$**: Document and confirm the behavior of the Elo engine and rolling form pipeline at $n=3$ to ensure no inappropriate $Q_{0.25}$ cold-start or NaN masking occurs for active teams.
+
+---
+
+## User Review Required
+
+> [!NOTE]
+> In Pass 1, Coventry collapses to the attack boundary ($\alpha = 0.01$) because it scored 0 goals in 3 matches, and Hull collapses to defense boundary ($\beta = 0.01$) because it conceded 0 goals in 3 matches.
+> In Pass 2, pinning their parameters to empirical priors ($P_{25}^{\text{att}} = 0.6097$, $P_{75}^{\text{def}} = 1.9590$) via L-BFGS-B parameter bounds `(prior, prior)` and warm-starting from Pass 1 converges in ~0.74s, shifting $\gamma$ from $1.2018 \to 1.1853$ and $\rho$ from $-0.1432 \to -0.1359$. This guarantees a single coherent joint MLE.
+
+---
+
+## Proposed Changes
+
+### Machine Learning Models
+
+#### [MODIFY] [ml/models/dixon_coles.py](file:///d:/Yash/Kokane/Projects/MatchSense/ml/models/dixon_coles.py)
+- In `DixonColesModel.fit()`:
+  - After Pass 1 optimization converges, inspect small-sample teams ($< 5$ matches in training window).
+  - If any small-sample team has collapsed to $\le 0.15$ for attack or defense:
+    - Compute empirical priors from established teams ($\ge 10$ matches): $P_{25}$ for attack, $P_{75}$ for defense.
+    - Set parameter bounds for the collapsed parameters to `(prior, prior)` and initialize them at `prior`.
+    - Execute Pass 2 with `scipy.optimize.minimize` (L-BFGS-B) warm-started from Pass 1 parameters.
+    - Unpack Pass 2 parameters into `self._attack, self._defense, self._home_advantage, self._rho`.
+    - Log Pass 2 iterations, time, and parameter shifts ($\Delta\gamma, \Delta\rho$).
+
+---
+
+### Tests
+
+#### [MODIFY] [tests/unit/test_dixon_coles.py](file:///d:/Yash/Kokane/Projects/MatchSense/tests/unit/test_dixon_coles.py)
+- Add a unit test verifying two-pass joint optimization when a team with few matches scores 0 goals:
+  - Verifies that Pass 2 is triggered, the affected team's parameter matches the empirical prior, and $\gamma, \rho$ adjust jointly.
+
+#### [MODIFY] [tests/integration/test_sync_pipeline.py](file:///d:/Yash/Kokane/Projects/MatchSense/tests/integration/test_sync_pipeline.py)
+- Add `test_main_end_to_end_pipeline_wiring(test_db)`:
+  - Patch `scripts.sync_pipeline.SessionLocal` with test DB sessionmaker.
+  - Patch external network calls: `download_season_csv` and `FootballDataClient`.
+  - Patch `load_all_seasons` to provide a fast representative match dataset.
+  - Execute `sync_pipeline.main()`.
+  - Verify:
+    1. Phase A writes `Match` and `Fixture` records.
+    2. Phase B1 produces an active `ModelArtifact` for `dixon_coles` in the DB.
+    3. Phase B2 produces an active `ModelArtifact` for `xgboost` in the DB.
+    4. Fixture precomputed predictions contain both `dixon_coles` and `xgboost` entries.
+
+---
+
+### Production Verification
+
+- Trigger a live sync run with `python -m scripts.sync_pipeline`.
+- Verify the two-pass optimization executes against the real database and updates `data/models/dixon_coles_latest.pkl` and `data/models/xgboost_latest.pkl`.
+- Verify that `graphify update .` updates the project knowledge graph.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Run `pytest tests/unit/test_dixon_coles.py -v`
+- Run `pytest tests/integration/test_sync_pipeline.py -v`
+- Run the entire test suite: `pytest`
+
+### Live Execution Verification
+- Run `python -m scripts.sync_pipeline`
+- Inspect DB records:
+  - `ModelArtifact` rows for `dixon_coles` and `xgboost` with current timestamp and active status.
+  - Inspect `_home_advantage` and `_rho` to verify they reflect the two-pass joint values.

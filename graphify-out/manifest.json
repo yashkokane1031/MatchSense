@@ -42,15 +42,15 @@
     "semantic_hash": "74c0cef082c7a1f5667ccdd159595371"
   },
   "backend/api/routes/health.py": {
-    "mtime": 1789294599.1148403,
-    "seen": 1789296205.8977795,
-    "ast_hash": "32692d8b98868eec4715e949f055cfe3",
+    "mtime": 1789308170.3638806,
+    "seen": 1789308460.336313,
+    "ast_hash": "9e92fe729cd47300a62477990de41236",
     "semantic_hash": ""
   },
   "backend/api/routes/predictions.py": {
-    "mtime": 1789302071.3926167,
-    "seen": 1789303351.7481973,
-    "ast_hash": "e3469bc1906efefa750b96293c93d3bb",
+    "mtime": 1789308208.9523056,
+    "seen": 1789308460.3363159,
+    "ast_hash": "a2c21631a6d907263147c300cf487400",
     "semantic_hash": ""
   },
   "backend/core/__init__.py": {
@@ -90,9 +90,9 @@
     "semantic_hash": "5f1ddb9e220acfe6c0ab79b0739f925b"
   },
   "backend/services/prediction.py": {
-    "mtime": 1789302022.971737,
-    "seen": 1789303351.748213,
-    "ast_hash": "7a4bcea5c2d25a92ed5b83c98c9a4f18",
+    "mtime": 1789308132.9150944,
+    "seen": 1789308460.3363314,
+    "ast_hash": "ce588536005cfe62b623c51106a93ded",
     "semantic_hash": ""
   },
   "ml/__init__.py": {
@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "ml/models/xgboost_model.py": {
-    "mtime": 1789305829.801808,
-    "seen": 1789306225.0625076,
-    "ast_hash": "db3222f435f4e58967c7d7229958d01e",
+    "mtime": 1789308689.2686422,
+    "seen": 1789308753.8028638,
+    "ast_hash": "ed0d3deaebdf1fd9ef231f6951501a76",
     "semantic_hash": ""
   },
   "tests/integration/test_multi_model_cv.py": {
@@ -534,9 +534,9 @@
     "semantic_hash": ""
   },
   "scripts/sync_pipeline.py": {
-    "mtime": 1789304420.9668047,
-    "seen": 1789304980.257796,
-    "ast_hash": "759b9073eb905cbdcb6b1be2484a8215",
+    "mtime": 1789308083.9661312,
+    "seen": 1789308460.336479,
+    "ast_hash": "df55741c8ea3c19ce74bb2d96ff90037",
     "semantic_hash": ""
   },
   "tests/integration/test_sync_pipeline.py": {
@@ -642,9 +642,9 @@
     "semantic_hash": ""
   },
   "frontend/src/app/simulator/page.tsx": {
-    "mtime": 1789297912.3025036,
-    "seen": 1789298079.5109956,
-    "ast_hash": "2102c9a58a5553d3bbe7cdf109a70eae",
+    "mtime": 1789308153.012447,
+    "seen": 1789308460.3363473,
+    "ast_hash": "b0dfdeacde4d3d7e659afbd802bc5da0",
     "semantic_hash": ""
   },
   "frontend/src/app/teams/[team]/page.tsx": {
@@ -708,9 +708,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/simulator/FeatureDiffTable.tsx": {
-    "mtime": 1789295558.9077747,
-    "seen": 1789296205.897826,
-    "ast_hash": "937b0bf96269f29c51814064750ce55e",
+    "mtime": 1789308143.918209,
+    "seen": 1789308460.336367,
+    "ast_hash": "133122bd1df29af80541df7d535d8bb2",
     "semantic_hash": ""
   },
   "frontend/src/components/simulator/ModelComparisonBlock.tsx": {
@@ -882,9 +882,9 @@
     "semantic_hash": ""
   },
   "ml/data/normalization.py": {
-    "mtime": 1789301981.6679764,
-    "seen": 1789303351.7483013,
-    "ast_hash": "906fbed5189dd52ef6c936dd230370ea",
+    "mtime": 1789308074.7257497,
+    "seen": 1789308460.3364186,
+    "ast_hash": "c2b2ee0d55c24d9103166556c0adbaff",
     "semantic_hash": ""
   },
   "ml/data/season.py": {
@@ -915,6 +915,36 @@
     "mtime": 1789303273.1423414,
     "seen": 1789303644.8203113,
     "ast_hash": "b69ec148d780419a70e67af3243b1ef3",
+    "semantic_hash": ""
+  },
+  "scratch/repredict_fixtures.py": {
+    "mtime": 1789308178.6970403,
+    "seen": 1789308460.3364637,
+    "ast_hash": "b15297d2e081d210e8e4bc761d00410b",
+    "semantic_hash": ""
+  },
+  "scratch/test_phase_a.py": {
+    "mtime": 1789307915.7070863,
+    "seen": 1789308460.3364651,
+    "ast_hash": "6068367faf83b8256ca565580190c0b8",
+    "semantic_hash": ""
+  },
+  "scratch/verify_api_live.py": {
+    "mtime": 1789308285.3856833,
+    "seen": 1789308460.3364668,
+    "ast_hash": "765daa0d3f3d6874b2280a2bf570be74",
+    "semantic_hash": ""
+  },
+  "Markdowns/walkthrough_integration.md": {
+    "mtime": 1789306266.3617563,
+    "seen": 1789308460.3365426,
+    "ast_hash": "41c2ceddf02750d81082a3c01356568e",
+    "semantic_hash": ""
+  },
+  "scratch/trace_features.py": {
+    "mtime": 1789308583.5878155,
+    "seen": 1789308753.8028781,
+    "ast_hash": "9a9cf621461916172a9475c2f9ff1920",
     "semantic_hash": ""
   }
 }
