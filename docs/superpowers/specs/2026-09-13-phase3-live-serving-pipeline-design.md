@@ -62,7 +62,7 @@ CREATE TABLE fixtures (
     home_team VARCHAR(50) NOT NULL,               -- Canonical name
     away_team VARCHAR(50) NOT NULL,               -- Canonical name
     status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED', -- 'SCHEDULED' | 'TIMED' | 'POSTPONED' | 'FINISHED'
-    precomputed_predictions JSONB NULL,           -- Cached per-model predictions with metadata
+    precomputed_predictions JSONB NOT NULL DEFAULT '{}'::jsonb, -- Partial-merge target with per-model metadata
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -71,7 +71,7 @@ CREATE INDEX idx_fixtures_upcoming
 ```
 
 #### Per-Model Prediction Schema & Independent Freshness Tracking
-To guarantee independent model freshness without schema migrations, `precomputed_predictions` nests the model version and generation timestamp inside each model's block:
+To guarantee independent model freshness and eliminate cross-phase write-clobbering, `precomputed_predictions` defaults to an empty JSONB object `{}`. All pipeline writes must perform targeted partial merges using `jsonb_set(COALESCE(precomputed_predictions, '{}'::jsonb), ...)` rather than full-column overwrites. The column nests model version and generation timestamp inside each architecture's block:
 
 ```json
 {
@@ -196,24 +196,48 @@ The weekly synchronization script (`scripts/sync_pipeline.py`) runs in an extern
      - *Budget*: Doubled ceiling: `maxfun=100,000`, `maxiter=4,000` (3.7x higher than the highest evaluation count seen in Phase 2B cross-validation: 26,936 at GW37).
 3. **Gate 2A (Parameter Bounds Verification)**:
    - Verify $\gamma \in [1.05, 1.55]$, $\rho \in [-0.25, 0.25]$, $\alpha_i, \beta_i \in [0.15, 4.0]$, and $\alpha_{\text{ref}} \equiv 1.0$.
-4. **Activation & Fixture Update**:
+4. **Activation & Fixture Partial Merge**:
    - `UPDATE models SET is_active = FALSE WHERE model_name = 'dixon_coles';`
    - `INSERT INTO models (model_name, version, artifact_bytes, manifest, is_active) VALUES ('dixon_coles', ..., TRUE);`
    - Generate Dixon-Coles fixture predictions with `model_version` and `computed_at`.
-   - Update `fixtures.precomputed_predictions = jsonb_set(coalesce(precomputed_predictions, '{}'), '{dixon_coles}', :dc_payload)`. `COMMIT`.
-   - *Failure behavior*: If both Attempt 1 and Attempt 2 fail Gate 2A, Phase B1 rolls back. The previously active Dixon-Coles model remains active in `models`. A critical alert is logged.
+   - Execute targeted JSONB partial merge (full-column replace is strictly banned):
+     ```sql
+     UPDATE fixtures
+     SET precomputed_predictions = jsonb_set(
+         COALESCE(precomputed_predictions, '{}'::jsonb),
+         '{dixon_coles}',
+         :dc_payload::jsonb,
+         true
+     ),
+     updated_at = NOW()
+     WHERE id = :fixture_id;
+     ```
+   - `COMMIT`.
+   - *Failure behavior*: If both Attempt 1 and Attempt 2 fail Gate 2A, Phase B1 rolls back. The previously active Dixon-Coles model remains active in `models`. Existing predictions in `fixtures` remain untouched. A critical alert is logged.
 
 ### 4.3 Phase B2: XGBoost Refit & Activation Transaction
 1. **Feature Update**: Recompute window-anchored Elo ($R_0 = 1500$) and rolling stats matrix across 1,520 rows.
 2. **Model Refit**: Fit 120 regularized gradient-boosted trees over 70 features.
 3. **Gate 2A (Probability Verification)**:
    - Verify non-empty predictions, no NaN/Inf, and individual match probabilities fall in $[0.01, 0.95]$.
-4. **Activation & Fixture Update**:
+4. **Activation & Fixture Partial Merge**:
    - `UPDATE models SET is_active = FALSE WHERE model_name = 'xgboost';`
    - `INSERT INTO models (model_name, version, artifact_bytes, manifest, is_active) VALUES ('xgboost', ..., TRUE);`
    - Generate XGBoost fixture predictions with `model_version` and `computed_at`.
-   - Update `fixtures.precomputed_predictions = jsonb_set(coalesce(precomputed_predictions, '{}'), '{xgboost}', :xgb_payload)`. `COMMIT`.
-   - *Failure behavior*: If refit fails or produces invalid probabilities, Phase B2 rolls back. The previously active XGBoost model remains active.
+   - Execute targeted JSONB partial merge:
+     ```sql
+     UPDATE fixtures
+     SET precomputed_predictions = jsonb_set(
+         COALESCE(precomputed_predictions, '{}'::jsonb),
+         '{xgboost}',
+         :xgb_payload::jsonb,
+         true
+     ),
+     updated_at = NOW()
+     WHERE id = :fixture_id;
+     ```
+   - `COMMIT`.
+   - *Failure behavior*: If refit fails or produces invalid probabilities, Phase B2 rolls back. The previously active XGBoost model remains active. Existing Dixon-Coles predictions in `fixtures` remain untouched.
 
 ### 4.4 Multi-Gameweek Cadence & Gate 2B Out-of-Sample Audit
 
@@ -433,6 +457,7 @@ FastAPI uses an in-memory `ModelManager` to avoid DB latency on the hot path whi
   - Verify Phase B1 Attempt 1 (warm-start) vs Attempt 2 (flat-prior reset) on Gate 2A bounds violation.
   - Verify Gate 2B multi-gameweek audit scoring across skipped gameweek backlog.
   - Verify independent transaction commits: healthy XGBoost commits when Dixon-Coles aborts.
+  - Verify JSONB partial merge: sequential execution of Phase B1 and Phase B2 preserves both 'dixon_coles' and 'xgboost' keys in fixtures.precomputed_predictions, and COALESCE handles NULL initial values without data loss.
 
 ### 7.2 Regression Invariant
 - All 99 existing unit, property, and integration tests must continue to pass with 0 regressions.
