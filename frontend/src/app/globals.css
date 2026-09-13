@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0d14;
+  --color-surface-subtle: #111622;
+  --color-surface-card: rgba(17, 22, 34, 0.75);
+  --color-surface-elevated: #1a2234;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Model Accents (Cyan vs Violet) */
+  --color-model-dixon: #0ea5e9;
+  --color-model-dixon-glow: rgba(14, 165, 233, 0.25);
+  --color-model-xgboost: #8b5cf6;
+  --color-model-xgboost-glow: rgba(139, 92, 246, 0.25);
+
+  /* Match Outcomes (Emerald vs Slate vs Amber) */
+  --color-outcome-home: #10b981;
+  --color-outcome-draw: #64748b;
+  --color-outcome-away: #f59e0b;
+}
+
+body {
+  background-color: var(--color-background);
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
