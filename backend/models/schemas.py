@@ -6,9 +6,22 @@ Three core tables:
 - Prediction: Model predictions with full score distributions
 """
 
+import uuid
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, Float, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    LargeBinary,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.core.database import Base
@@ -110,3 +123,57 @@ class Prediction(Base):
             f"<Prediction {self.model_name}: {self.home_team} vs {self.away_team} "
             f"({self.prob_home:.2f}/{self.prob_draw:.2f}/{self.prob_away:.2f})>"
         )
+
+
+class ModelArtifact(Base):
+    """Serialized model binary and walk-forward verification manifest."""
+
+    __tablename__ = "models"
+    __table_args__ = (
+        Index("idx_models_lookup", "model_name", "is_active", "updated_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    model_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    version: Mapped[str] = mapped_column(String(64), nullable=False)
+    artifact_bytes: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    manifest: Mapped[dict] = mapped_column(JSON, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def __repr__(self) -> str:
+        return f"<ModelArtifact {self.model_name} {self.version} active={self.is_active}>"
+
+
+class Fixture(Base):
+    """Upcoming scheduled Premier League fixture with cached predictions."""
+
+    __tablename__ = "fixtures"
+    __table_args__ = (
+        Index("idx_fixtures_upcoming", "status", "kickoff_time"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)  # Football-Data.org match ID
+    season: Mapped[str] = mapped_column(String(10), nullable=False)
+    gameweek: Mapped[int] = mapped_column(Integer, nullable=False)
+    kickoff_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    home_team: Mapped[str] = mapped_column(String(50), nullable=False)
+    away_team: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="SCHEDULED")
+    precomputed_predictions: Mapped[dict] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def __repr__(self) -> str:
+        return f"<Fixture {self.id}: {self.home_team} vs {self.away_team} ({self.status})>"
+
