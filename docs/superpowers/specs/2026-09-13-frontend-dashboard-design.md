@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
 | Endpoint | Method | Fetch Location | Caching Policy | Justification |
 |---|---|---|---|---|
-| `/fixtures/upcoming` | GET | Server Component (`/`) | `next: { revalidate: 60 }` | Match completions & score updates happen weekly/daily; 60s prevents cache stale without hammering API. |
+| `/fixtures/upcoming` | GET | Server Component (`/`) | `next: { revalidate: 60 }` | Match completions & fixtures update on the weekly sync cadence (Tuesday 03:00 UTC cron or manual trigger); 60s prevents cache stale after sync without hammering API. |
 | `/teams` | GET | Server Component (`/teams`, `/simulator`) | `next: { revalidate: 3600 }` | Premier League club names are static across a season; 1 hour prevents redundant queries. |
 | `/teams/{team}/profile` | GET | Server Component (`/teams/[team]`) | `next: { revalidate: 300 }` | 5 minutes balances high edge cache hit rates with reflecting manual sync or Elo changes. |
 | `/predictions/compare` | POST | Client Island (`/simulator`) | `cache: "no-store"` | User-driven interactive tool with in-memory memoization (`Map<string, ComparePredictionResponse>`). |
@@ -345,11 +345,12 @@ All numeric probability outputs use `font-mono tabular-nums tracking-tight` to p
   - Asserts changing a combobox updates URL via shallow routing without page reload.
 
 ### 8.3 Resilience Integration Tests (`frontend/tests/integration/resilience.test.tsx`)
-Using Mock Service Worker (MSW) to intercept `/api/v1/*` requests and test all 4 failure scenarios in the resilience matrix:
+Using Mock Service Worker (MSW) to intercept `/api/v1/*` requests and test all 5 scenarios in the resilience matrix:
 1. **Scenario 1 (Nominal)**: Returns 200 OK with valid dual-model payloads. Asserts `● Models Live` renders and both model cards are active.
 2. **Scenario 2 (Partial Model Outage)**: Returns Dixon-Coles active, XGBoost 503. Asserts `▲ System Degraded` renders, DC heatmap displays, and XGBoost displays the transparent staleness badge `[As of YYYY-MM-DD · Retraining Pending]`.
 3. **Scenario 3 (503 Service Unavailable)**: Returns 503 on `/health` and `/predictions/compare`. Asserts "Models initializing after weekly sync" alert appears without crashing the page.
 4. **Scenario 4 (Network Offline)**: Network request throws `NetworkError`. Asserts `✕ API Offline` badge renders and manual retry button is present.
+5. **Scenario 5 (Invalid Team Parameter 404)**: Returns 404 on `/predictions/compare` or `/teams/{team}/profile`. Asserts error warning toast/alert appears, and combobox resets to default pair (or redirects to `/teams` with toast) without uncaught exceptions.
 
 ---
 
