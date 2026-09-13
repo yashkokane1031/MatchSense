@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     # Model
     model_path: str = "data/models/dixon_coles_latest.pkl"
+    xgb_model_path: str = "data/models/xgboost_latest.pkl"
 
     # Football-Data.org API (Phase 3)
     football_data_api_key: str = ""
