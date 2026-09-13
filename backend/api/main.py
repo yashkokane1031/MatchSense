@@ -22,25 +22,17 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Load the model at startup, clean up on shutdown."""
-    model_path = Path(settings.model_path)
-    if model_path.exists():
-        logger.info("Loading model from %s", model_path)
-        model = DixonColesModel.load(model_path)
-        set_model(model)
-        logger.info("Model loaded successfully: %s", model.get_model_info())
-    else:
-        logger.warning(
-            "Model file not found at %s. Prediction endpoints will return errors. "
-            "Run the training pipeline first: uv run python scripts/seed_data.py",
-            model_path,
-        )
+    """Initialize model manager at startup and log status."""
+    from backend.services.model_manager import model_manager
+
+    logger.info("Initializing ModelManager from database and local fallbacks...")
+    model_manager.initialize_from_files_or_db()
+    health_info = model_manager.is_healthy()
+    logger.info("ModelManager initialized: %s", health_info)
 
     yield
 
-    # Cleanup
-    set_model(None)
-    logger.info("Model unloaded")
+    logger.info("App shutting down")
 
 
 def create_app() -> FastAPI:

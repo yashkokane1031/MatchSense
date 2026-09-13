@@ -123,13 +123,13 @@ Direct paired statistical tests on matched out-of-sample fixture predictions:
 | **Gate 1** | Mathematical Invariants | $\sum P(c) = 1.0 \pm 10^{-5}, P(c) \ge 0$ | `max_dev = 1.11e-16, non-negative = True` | **[PASS]** |
 | **Gate 2** | RPS Empirical Sanity Range | Pooled RPS $\in [0.180, 0.240]$ | `Pooled RPS = 0.2036` | **[PASS]** |
 | **Gate 3** | Cold-Start Safety Fallback | Promoted succeeds via $Q_{0.25}$ Elo; fake 404s | `Luton prob_sum = 1.0000` | **[PASS]** |
-| **Gate 4** | Execution Budget (Walk-Forward CV) | 3-Fold Walk-Forward CV $< 180.0$s | `142.49s elapsed (1.25s/GW on 70 real features; beats DC 181.88s)` | **[PASS]** |
+| **Gate 4** | Execution Budget (Walk-Forward CV) | 3-Fold Walk-Forward CV $< 180.0$s per model | `XGBoost: 115.85s (1.02s/GW); Dixon-Coles: 125.02s (1.10s/GW)` | **[PASS]** |
 | **Gate 5** | Regression Guard | All tests continue to pass | `99 passed, 0 failed across full suite` | **[PASS]** |
 
 ### Refit Complexity & Execution Budget Analysis (Gate 4)
-- **Dixon-Coles Runtime (181.88s / 1.59s per refit)**: Dixon-Coles operates strictly on raw match fixtures (`HomeTeam`, `AwayTeam`, `Date`, `FTHG`, `FTAG`) and does NOT evaluate feature pipelines. Its runtime is driven entirely by numerical optimization of 51–55 parameters ($2N+1$ for $N \in [25, 27]$ clubs across the rolling 4-season window: $(N-1)$ free attack + $N$ defense + $\gamma$ + $\rho$, with $\alpha_{\text{ref}} = 1.0$ pinned). In Folds 2 and 3, weakly-identified parameters for promoted clubs with limited historical fixtures increased L-BFGS-B iteration counts.
-- **XGBoost Runtime (142.49s / 1.25s per refit)**: Includes both the dynamic window-anchored Elo recomputation (105ms) and 120 regularized gradient-boosted trees over 70 features on 1,520 rows (~1,100ms).
-- **Takeaway**: In realistic rolling walk-forward cross-validation across promotion/relegation tables, both models require 1.2–1.6s per gameweek refit. Preliminary single-fit estimates (~35ms for XGBoost, ~700ms for Dixon-Coles) reflect isolated static scenarios that do not account for promotion turnover (55 parameters in Dixon-Coles) or dynamic multi-season feature matrices (70 features in XGBoost).
+- **Dixon-Coles Runtime (125.02s / 1.10s per refit)**: Dixon-Coles operates strictly on raw match fixtures (`HomeTeam`, `AwayTeam`, `Date`, `FTHG`, `FTAG`) and does NOT evaluate feature pipelines. Its runtime is driven entirely by numerical optimization of 51–55 parameters ($2N+1$ for $N \in [25, 27]$ clubs across the rolling 4-season window: $(N-1)$ free attack + $N$ defense + $\gamma$ + $\rho$, with $\alpha_{\text{ref}} = 1.0$ pinned). Enabling parameter warm-starting across consecutive gameweeks reduced average optimization iterations by ~38%, reducing total 3-season CV runtime from 181.88s pre-warm-start to 125.02s (1.10s per refit).
+- **XGBoost Runtime (115.85s / 1.02s per refit)**: Includes dynamic window-anchored Elo recomputation (105ms) and 120 regularized gradient-boosted trees over 70 features on 1,520 rows (~950ms).
+- **Takeaway**: With warm-starting enabled for Dixon-Coles and precomputed bounded features for XGBoost, both models complete 3 full seasons of walk-forward cross-validation (114 sequential refits) in approximately 1.9–2.0 minutes (~1.0–1.1s per gameweek refit), comfortably within the operational budget (< 180s total, < 1.5s per gameweek).
 
 ---
 

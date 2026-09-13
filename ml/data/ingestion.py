@@ -57,6 +57,43 @@ def normalize_team_name(name: str) -> str:
     return TEAM_NAME_MAP.get(name, name)
 
 
+FOOTBALL_DATA_ORG_NAME_MAP: dict[str, str] = {
+    "Arsenal FC": "Arsenal",
+    "Aston Villa FC": "Aston Villa",
+    "AFC Bournemouth": "Bournemouth",
+    "Brentford FC": "Brentford",
+    "Brighton & Hove Albion FC": "Brighton",
+    "Burnley FC": "Burnley",
+    "Chelsea FC": "Chelsea",
+    "Crystal Palace FC": "Crystal Palace",
+    "Everton FC": "Everton",
+    "Fulham FC": "Fulham",
+    "Ipswich Town FC": "Ipswich",
+    "Leeds United FC": "Leeds",
+    "Leicester City FC": "Leicester",
+    "Liverpool FC": "Liverpool",
+    "Luton Town FC": "Luton",
+    "Manchester City FC": "Manchester City",
+    "Manchester United FC": "Manchester Utd",
+    "Newcastle United FC": "Newcastle",
+    "Nottingham Forest FC": "Nottingham Forest",
+    "Sheffield United FC": "Sheffield Utd",
+    "Southampton FC": "Southampton",
+    "Tottenham Hotspur FC": "Tottenham",
+    "West Ham United FC": "West Ham",
+    "Wolverhampton Wanderers FC": "Wolverhampton",
+}
+
+
+def normalize_football_data_org_name(raw_name: str) -> str:
+    """Map Football-Data.org official club names to MatchSense canonical names."""
+    if raw_name in FOOTBALL_DATA_ORG_NAME_MAP:
+        return FOOTBALL_DATA_ORG_NAME_MAP[raw_name]
+    # Suffix stripping fallback
+    stripped = raw_name.replace(" FC", "").replace("AFC ", "").strip()
+    return stripped
+
+
 def download_season_csv(season_code: str, cache_dir: Path | None = None) -> str:
     """Download a season CSV from football-data.co.uk.
 
