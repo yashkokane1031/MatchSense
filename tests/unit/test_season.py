@@ -54,9 +54,16 @@ class TestDeriveSeasonFromDate:
         assert code == "2627"
         assert label == "2026-27"
 
-    def test_august_maps_to_new_season(self):
-        """Aug 2025 → 2025-26 season."""
-        now = datetime(2025, 8, 1, tzinfo=timezone.utc)
+    def test_early_august_maps_to_previous_season(self):
+        """Early Aug (< Aug 15) → previous season (pre-season)."""
+        now = datetime(2025, 8, 5, tzinfo=timezone.utc)
+        code, label = derive_season_from_date(now)
+        assert code == "2425"
+        assert label == "2024-25"
+
+    def test_mid_august_maps_to_new_season(self):
+        """Mid-Aug (>= Aug 15) → new season."""
+        now = datetime(2025, 8, 15, tzinfo=timezone.utc)
         code, label = derive_season_from_date(now)
         assert code == "2526"
         assert label == "2025-26"
@@ -113,33 +120,32 @@ class TestDeriveCurrentSeason:
         assert label == "2026-27"
 
     def test_early_august_with_api_reporting_new_season(self):
-        """Early Aug: date-math says new season, API agrees → new season."""
+        """Early Aug: date fallback says 2526, but API reports 2627 → API wins."""
         api = ("2627", "2026-27")
-        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)  # date fallback alone would say 2526
         code, label = derive_current_season(api_season=api, now=now)
         assert code == "2627"
         assert label == "2026-27"
 
     def test_early_august_with_api_reporting_old_season(self):
-        """Early Aug: date-math says new season, but API still reports old → old season wins.
-        
-        This is the critical edge case: the PL season hasn't started yet,
-        football-data.co.uk still shows last season's fixtures, and the API
-        correctly reports the old season. Without the API check, the pipeline
-        would attempt to ingest a non-existent season.
-        """
+        """Early Aug: API reports old season → old season confirmed."""
         api = ("2526", "2025-26")
-        now = datetime(2026, 8, 5, tzinfo=timezone.utc)  # date-math → "2627"
+        now = datetime(2026, 8, 5, tzinfo=timezone.utc)
         code, label = derive_current_season(api_season=api, now=now)
         assert code == "2526"
         assert label == "2025-26"
 
-    def test_early_august_without_api_falls_back_to_date(self):
-        """Early Aug without API: falls back to date-math (known limitation)."""
+    def test_early_august_without_api_falls_back_to_previous_season(self):
+        """Early Aug without API: date fallback safely returns previous season (before kickoff)."""
         now = datetime(2026, 8, 5, tzinfo=timezone.utc)
         code, label = derive_current_season(api_season=None, now=now)
-        # Date-math says "2627" — this is the fallback's known weakness,
-        # but it's the best we can do without network access.
+        assert code == "2526"
+        assert label == "2025-26"
+
+    def test_mid_august_without_api_falls_back_to_new_season(self):
+        """Mid-Aug (Aug 15+) without API: date fallback rolls over to new season."""
+        now = datetime(2026, 8, 15, tzinfo=timezone.utc)
+        code, label = derive_current_season(api_season=None, now=now)
         assert code == "2627"
         assert label == "2026-27"
 

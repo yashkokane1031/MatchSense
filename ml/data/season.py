@@ -57,7 +57,11 @@ def derive_season_from_date(now: datetime | None = None) -> tuple[str, str]:
     if now is None:
         now = datetime.now(timezone.utc)
 
-    if now.month >= 8:
+    # PL seasons kick off mid-August (typically Aug 11–18).
+    # In the offline fallback path, early August (Aug 1–14) safely remains
+    # attributed to the prior season so we don't attempt to ingest fixtures
+    # or CSVs before they exist.
+    if now.month > 8 or (now.month == 8 and now.day >= 15):
         start_year = now.year
     else:
         start_year = now.year - 1
