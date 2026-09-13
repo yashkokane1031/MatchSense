@@ -37,48 +37,48 @@ Every prediction is served live through a high-performance **FastAPI** backend a
 ```mermaid
 flowchart TD
     subgraph Data Pipeline
-        FDA[Football-Data.org API] -->|Scheduled Fixtures| SYNC[scripts/sync_pipeline.py]
-        FDC[football-data.co.uk CSVs] -->|Historical Results| SYNC
-        SYNC -->|Validation| PAN[Pandera Schema Enforcement]
-        PAN -->|Committed Phase A| PG[(PostgreSQL 16 Database)]
+        FDA["Football-Data.org API"] -->|Scheduled Fixtures| SYNC["scripts/sync_pipeline.py"]
+        FDC["football-data.co.uk CSVs"] -->|Historical Results| SYNC
+        SYNC -->|Validation| PAN["Pandera Schema Enforcement"]
+        PAN -->|Committed Phase A| PG[("PostgreSQL 16 Database")]
     end
 
-    subgraph Model Training & Invariants
-        PG --> LOAD[ml/data/loader.py]
-        LOAD --> DC_FIT[Dixon-Coles MLE Fit]
-        DC_FIT --> P2_CHECK{Boundary Collapse?}
-        P2_CHECK -->|Yes| PASS2[Pass 2: Bayesian Shrinkage Prior]
-        P2_CHECK -->|No| G2A_DC[Gate 2A Parameter Validation]
+    subgraph Model Training and Invariants
+        PG --> LOAD["ml/data/loader.py"]
+        LOAD --> DC_FIT["Dixon-Coles MLE Fit"]
+        DC_FIT --> P2_CHECK{"Boundary Collapse?"}
+        P2_CHECK -->|Yes| PASS2["Pass 2: Bayesian Shrinkage Prior"]
+        P2_CHECK -->|No| G2A_DC["Gate 2A Parameter Validation"]
         PASS2 --> G2A_DC
         
-        LOAD --> FEAT[ml/features/pipeline.py]
-        FEAT --> ELO[Window-Anchored Elo]
-        FEAT --> FORM[Form & Rest Windows]
-        FEAT --> XGB_FIT[XGBoost Booster Training]
-        XGB_FIT --> G2A_XGB[Gate 2A Probabilities Sanity]
+        LOAD --> FEAT["ml/features/pipeline.py"]
+        FEAT --> ELO["Window-Anchored Elo"]
+        FEAT --> FORM["Form and Rest Windows"]
+        FEAT --> XGB_FIT["XGBoost Booster Training"]
+        XGB_FIT --> G2A_XGB["Gate 2A Probabilities Sanity"]
 
-        G2A_DC -->|Phase B1 Pass| ARTIFACTS[(Model Artifacts Table)]
+        G2A_DC -->|Phase B1 Pass| ARTIFACTS[("Model Artifacts Table")]
         G2A_XGB -->|Phase B2 Pass| ARTIFACTS
-        ARTIFACTS -->|Atomic jsonb_set| FIXTURES[(Fixtures Table)]
+        ARTIFACTS -->|Atomic jsonb_set| FIXTURES[("Fixtures Table")]
     end
 
     subgraph Live Serving Layer
-        ARTIFACTS -->|Hot Reload TTL| MM[ModelManager In-Memory]
-        FIXTURES --> PREDS[PredictionService]
+        ARTIFACTS -->|Hot Reload TTL| MM["ModelManager In-Memory"]
+        FIXTURES --> PREDS["PredictionService"]
         MM --> PREDS
-        PREDS --> API[FastAPI REST API]
+        PREDS --> API["FastAPI REST API"]
         API --> HEALTH["GET /api/v1/health"]
         API --> FIX_EP["GET /api/v1/fixtures/upcoming"]
         API --> H2H_EP["POST /api/v1/predictions/compare"]
-        API --> TEAM_EP["GET /api/v1/teams/{team}/profile"]
+        API --> TEAM_EP["GET /api/v1/teams/:team/profile"]
     end
 
     subgraph Frontend Application
-        API --> NEXT[Next.js 15 App Router]
+        API --> NEXT["Next.js 15 App Router"]
         NEXT --> DASHBOARD["/ (Upcoming Fixture Cards)"]
-        NEXT --> SIMULATOR["/simulator (H2H Matrix & Heatmap)"]
+        NEXT --> SIMULATOR["/simulator (H2H Matrix and Heatmap)"]
         NEXT --> BENCHMARK["/models (Walk-Forward Benchmark)"]
-        NEXT --> PROFILES["/teams/[team] (Team Profiles & Staleness)"]
+        NEXT --> PROFILES["/teams/:team (Team Profiles and Staleness)"]
     end
 ```
 
