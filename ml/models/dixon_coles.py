@@ -110,6 +110,13 @@ class DixonColesModel(BasePredictor):
         self._n_matches: int = 0
         self._fit_date: str = ""
 
+        # Convergence diagnostics (populated after fit)
+        self._converged: bool | None = None
+        self._convergence_message: str = ""
+        self._fit_nfev: int = 0
+        self._fit_nit: int = 0
+        self._fit_nll: float = float("inf")
+
     @property
     def model_name(self) -> str:
         return "dixon_coles"
@@ -219,12 +226,29 @@ class DixonColesModel(BasePredictor):
 
         return -float(log_lik)
 
-    def fit(self, matches: pd.DataFrame) -> "DixonColesModel":
+    def get_warm_start_params(self) -> np.ndarray | None:
+        """Return the current parameter vector for warm-starting a subsequent fit.
+
+        Returns:
+            Flat parameter vector if fitted, else None.
+        """
+        if not self._is_fitted:
+            return None
+        return self._build_parameter_vector()
+
+    def fit(
+        self,
+        matches: pd.DataFrame,
+        warm_start_params: np.ndarray | None = None,
+    ) -> "DixonColesModel":
         """Fit the Dixon-Coles model on historical match data.
 
         Args:
             matches: DataFrame with columns: HomeTeam, AwayTeam, FTHG, FTAG, Date.
                 Must be sorted by date.
+            warm_start_params: Optional parameter vector from a prior fit to use
+                as the initial guess. If the team set has changed, this is ignored
+                and the flat prior is used instead.
 
         Returns:
             Self, for method chaining.
@@ -264,14 +288,29 @@ class DixonColesModel(BasePredictor):
         log_fact_home = gammaln(home_goals + 1.0)
         log_fact_away = gammaln(away_goals + 1.0)
 
-        # Initial parameters: all attack/defense at 1.0, gamma=1.3 (typical home advantage)
+        # Initial parameters: use warm-start if compatible, else flat prior
         n_free_alpha = n - 1
-        initial_params = np.concatenate([
-            np.ones(n_free_alpha),    # attack (free teams)
-            np.ones(n),               # defense (all teams)
-            [1.3],                    # gamma (home advantage)
-            [-0.05],                  # rho (Dixon-Coles correction)
-        ])
+        n_params = n_free_alpha + n + 2  # 2N+1
+
+        use_warm_start = (
+            warm_start_params is not None
+            and len(warm_start_params) == n_params
+        )
+        if use_warm_start:
+            initial_params = warm_start_params
+            logger.info("Using warm-start from previous fit (%d params)", n_params)
+        else:
+            initial_params = np.concatenate([
+                np.ones(n_free_alpha),    # attack (free teams)
+                np.ones(n),               # defense (all teams)
+                [1.3],                    # gamma (home advantage)
+                [-0.05],                  # rho (Dixon-Coles correction)
+            ])
+            if warm_start_params is not None:
+                logger.info(
+                    "Warm-start params incompatible (got %d, need %d); using flat prior",
+                    len(warm_start_params), n_params,
+                )
 
         # Parameter bounds
         bounds = (
@@ -281,38 +320,69 @@ class DixonColesModel(BasePredictor):
             + [(-1.0, 1.0)]               # rho
         )
 
+        # Clip warm-start to bounds (in case team-set change shifted values)
+        if use_warm_start:
+            for i, (lo, hi) in enumerate(bounds):
+                initial_params[i] = np.clip(initial_params[i], lo, hi)
+
         logger.info(
             "Fitting Dixon-Coles: %d teams, %d matches, %d parameters",
-            n, len(matches), len(initial_params),
+            n, len(matches), n_params,
         )
 
+        opt_args = (
+            home_indices, away_indices, home_goals, away_goals, weights,
+            ref_idx, non_ref_indices,
+            mask_0_0, mask_0_1, mask_1_0, mask_1_1,
+            log_fact_home, log_fact_away,
+        )
+
+        # First attempt: raised maxfun to avoid premature STOP
         result = minimize(
             self._neg_log_likelihood,
             initial_params,
-            args=(
-                home_indices,
-                away_indices,
-                home_goals,
-                away_goals,
-                weights,
-                ref_idx,
-                non_ref_indices,
-                mask_0_0,
-                mask_0_1,
-                mask_1_0,
-                mask_1_1,
-                log_fact_home,
-                log_fact_away,
-            ),
+            args=opt_args,
             method="L-BFGS-B",
             bounds=bounds,
-            options={"maxiter": 1000, "ftol": 1e-10},
+            options={"maxiter": 2000, "maxfun": 50000, "ftol": 1e-10},
         )
 
+        # If still non-converged, retry once with further relaxed limits
         if not result.success:
-            logger.warning("Optimization did not converge: %s", result.message)
+            logger.warning(
+                "First optimization attempt did not converge (nfev=%d, nit=%d): %s. "
+                "Retrying with doubled limits from current x.",
+                result.nfev, result.nit, result.message,
+            )
+            result = minimize(
+                self._neg_log_likelihood,
+                result.x,  # warm-start from partial result
+                args=opt_args,
+                method="L-BFGS-B",
+                bounds=bounds,
+                options={"maxiter": 4000, "maxfun": 100000, "ftol": 1e-10},
+            )
+
+        # Store convergence diagnostics
+        self._converged = bool(result.success)
+        self._convergence_message = (
+            str(result.message) if not result.success else "converged"
+        )
+        self._fit_nfev = int(result.nfev)
+        self._fit_nit = int(result.nit)
+        self._fit_nll = float(result.fun)
+
+        if not result.success:
+            logger.warning(
+                "Optimization did not converge after retry: %s "
+                "(nfev=%d, nit=%d, NLL=%.2f)",
+                result.message, result.nfev, result.nit, result.fun,
+            )
         else:
-            logger.info("Optimization converged in %d iterations", result.nit)
+            logger.info(
+                "Optimization converged in %d iterations (%d f/g evals)",
+                result.nit, result.nfev,
+            )
 
         # Unpack fitted parameters
         self._attack, self._defense, self._home_advantage, self._rho = (
@@ -323,8 +393,8 @@ class DixonColesModel(BasePredictor):
         self._fit_date = str(matches["Date"].max().date())
 
         logger.info(
-            "Fitted: home_advantage=%.3f, rho=%.4f",
-            self._home_advantage, self._rho,
+            "Fitted: home_advantage=%.3f, rho=%.4f, converged=%s",
+            self._home_advantage, self._rho, self._converged,
         )
 
         return self

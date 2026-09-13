@@ -85,6 +85,8 @@ def run_walk_forward_cv(
 
         test_gameweeks = sorted(test_data["Gameweek"].unique())
         fold_predictions: list[dict] = []
+        warm_start_params = None  # Carries params between consecutive GW fits
+        convergence_failures = 0
 
         for gw in test_gameweeks:
             gw_fixtures = test_data[test_data["Gameweek"] == gw]
@@ -95,9 +97,24 @@ def run_walk_forward_cv(
             prior_matches = matches_df[matches_df["Date"] < min_date]
             train_pool = prior_matches.tail(window_size_matches)
 
-            # Fit model on current training pool
+            # Fit model on current training pool with warm-start from previous GW
             model = model_factory()
-            model.fit(train_pool)
+            if hasattr(model, "fit") and "warm_start_params" in model.fit.__code__.co_varnames:
+                model.fit(train_pool, warm_start_params=warm_start_params)
+            else:
+                model.fit(train_pool)
+
+            # Capture warm-start params for the next gameweek
+            if hasattr(model, "get_warm_start_params"):
+                warm_start_params = model.get_warm_start_params()
+
+            # Track convergence status
+            if hasattr(model, "_converged") and model._converged is False:
+                convergence_failures += 1
+                logger.warning(
+                    "Fold %s GW %d: Dixon-Coles did not converge (%s)",
+                    test_s, gw, getattr(model, "_convergence_message", "unknown"),
+                )
 
             # Empirical prior baseline from current training slice
             h_freq = float((train_pool["FTR"] == "H").mean())
@@ -173,7 +190,13 @@ def run_walk_forward_cv(
             "brier": float(df_fold["brier"].mean()),
             "log_loss": float(df_fold["log_loss"].mean()),
             "accuracy": float(df_fold["correct"].mean()),
+            "convergence_failures": convergence_failures,
         })
+        if convergence_failures > 0:
+            logger.warning(
+                "Fold %s completed with %d/%d non-converged fits",
+                test_s, convergence_failures, len(test_gameweeks),
+            )
         eval_records.append(df_fold)
 
     df_all_eval = pd.concat(eval_records, ignore_index=True)

@@ -283,19 +283,21 @@ def main() -> None:
     fold_metrics_dc: list[dict[str, Any]] = []
     df_xgb_eval: pd.DataFrame | None = None
     fold_metrics_xgb: list[dict[str, Any]] = []
+    t_dc_elapsed: float = 0.0
     t_xgb_elapsed: float = 0.0
 
     # 2. Run Dixon-Coles walk-forward CV if requested
     if args.model in ["dixon_coles", "all"]:
         logger.info("=== Starting Dixon-Coles Walk-Forward CV ===")
-        t_dc = time.time()
+        t_dc_start = time.time()
         df_dc_eval, fold_metrics_dc = run_walk_forward_cv(
             model_factory=lambda: DixonColesModel(xi=0.005, allow_unknown=True),
             matches_df=matches,
             test_seasons=test_seasons,
             window_size_seasons=args.window_size,
         )
-        logger.info("Dixon-Coles CV complete in %.2fs (%d matches)", time.time() - t_dc, len(df_dc_eval))
+        t_dc_elapsed = time.time() - t_dc_start
+        logger.info("Dixon-Coles CV complete in %.2fs (%d matches)", t_dc_elapsed, len(df_dc_eval))
 
     # 3. Run XGBoost walk-forward CV if requested
     if args.model in ["xgboost", "all"]:
@@ -359,8 +361,8 @@ def main() -> None:
         p_sum = sum(p_promoted.values())
         g3_pass = p_promoted["prob_home"] > 0 and p_promoted["prob_away"] > 0 and abs(p_sum - 1.0) < 1e-4
 
-        # Gate 4: Execution Budget (< 180.0s for 3-fold walk-forward CV, outperforming Dixon-Coles)
-        g4_pass = t_xgb_elapsed < 180.0
+        # Gate 4: Execution Budget (< 180.0s for 3-fold walk-forward CV per model)
+        g4_pass = t_xgb_elapsed < 180.0 and (t_dc_elapsed == 0.0 or t_dc_elapsed < 180.0)
 
         # Gate 5: Regression Guard
         g5_pass = True
@@ -386,8 +388,8 @@ def main() -> None:
             },
             "Gate 4": {
                 "name": "Execution Budget (Walk-Forward CV)",
-                "threshold": "3-Fold Walk-Forward CV < 180.0s (beating Dixon-Coles 181.9s)",
-                "measured": f"{t_xgb_elapsed:.2f}s elapsed (1.25s/GW on 70 real features; beats DC 181.88s)",
+                "threshold": "3-Fold Walk-Forward CV < 180.0s per model",
+                "measured": f"XGBoost: {t_xgb_elapsed:.2f}s ({t_xgb_elapsed/114.0:.2f}s/GW); Dixon-Coles: {t_dc_elapsed:.2f}s ({t_dc_elapsed/114.0:.2f}s/GW)",
                 "passed": g4_pass,
             },
             "Gate 5": {
@@ -408,6 +410,7 @@ def main() -> None:
             head_to_head=head_to_head,
             market_comparison=market_comp,
             sanity_gates=sanity_gates,
+            timing_info={"dixon_coles": t_dc_elapsed, "xgboost": t_xgb_elapsed},
         )
 
         comp_report.print_summary()
