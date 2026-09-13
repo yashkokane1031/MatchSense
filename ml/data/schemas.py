@@ -21,6 +21,7 @@ KNOWN_PL_TEAMS: set[str] = {
     "Crystal Palace",
     "Everton",
     "Fulham",
+    "Hull",
     "Ipswich",
     "Leeds",
     "Leicester",

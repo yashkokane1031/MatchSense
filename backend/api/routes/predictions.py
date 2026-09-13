@@ -155,7 +155,7 @@ def list_upcoming_fixtures(db: Session = Depends(get_db)) -> list[FixtureCard]:
         ("Manchester City", "Liverpool", "2026-09-19T16:30:00Z", 28, 102),
         ("Tottenham Hotspur", "Aston Villa", "2026-09-20T13:00:00Z", 28, 103),
         ("Newcastle United", "Manchester United", "2026-09-20T15:30:00Z", 28, 104),
-        ("Brighton", "West Ham United", "2026-09-20T18:00:00Z", 28, 105),
+        ("Brighton", "Hull City", "2026-09-20T18:00:00Z", 28, 105),
         ("Everton", "Fulham", "2026-09-21T19:00:00Z", 28, 106),
     ]
     cards = []

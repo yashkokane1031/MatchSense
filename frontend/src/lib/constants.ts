@@ -16,11 +16,24 @@ const ALIAS_LOOKUP: Record<string, string> = {
   "Wolves": "Wolverhampton Wanderers",
   "Leicester": "Leicester City",
   "Ipswich": "Ipswich Town",
-  "Sheffield Utd": "Sheffield United",
   "Coventry": "Coventry City",
-  "Sunderland AFC": "Sunderland",
+  "Hull": "Hull City",
+  "Sheffield Utd": "Sheffield United",
+  "Luton": "Luton Town",
+  "Leeds": "Leeds United",
 };
 
+const HISTORICAL_TEAMS: Record<string, TeamMeta> = {
+  "West Ham United": { name: "West Ham United", shortName: "WHU", primaryColor: "#7A263A" },
+  "Wolverhampton Wanderers": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },
+  "Burnley": { name: "Burnley", shortName: "BUR", primaryColor: "#6C1D45" },
+  "Luton Town": { name: "Luton Town", shortName: "LUT", primaryColor: "#FF6600" },
+  "Sheffield United": { name: "Sheffield United", shortName: "SHU", primaryColor: "#EE2737" },
+  "Leeds United": { name: "Leeds United", shortName: "LEE", primaryColor: "#FFCD00" },
+  "Sunderland": { name: "Sunderland", shortName: "SUN", primaryColor: "#EB172B" },
+};
+
+// The 20 active clubs for the 2026-27 Premier League season
 const BASE_PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Arsenal": { name: "Arsenal", shortName: "ARS", primaryColor: "#EF0107" },
   "Aston Villa": { name: "Aston Villa", shortName: "AVL", primaryColor: "#95BFE5" },
@@ -32,6 +45,7 @@ const BASE_PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Crystal Palace": { name: "Crystal Palace", shortName: "CRY", primaryColor: "#1B458F" },
   "Everton": { name: "Everton", shortName: "EVE", primaryColor: "#003399" },
   "Fulham": { name: "Fulham", shortName: "FUL", primaryColor: "#FFFFFF" },
+  "Hull City": { name: "Hull City", shortName: "HUL", primaryColor: "#F5A623" },
   "Ipswich Town": { name: "Ipswich Town", shortName: "IPS", primaryColor: "#003399" },
   "Leicester City": { name: "Leicester City", shortName: "LEI", primaryColor: "#003090" },
   "Liverpool": { name: "Liverpool", shortName: "LIV", primaryColor: "#C8102E" },
@@ -40,10 +54,7 @@ const BASE_PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Newcastle United": { name: "Newcastle United", shortName: "NEW", primaryColor: "#241F20" },
   "Nottingham Forest": { name: "Nottingham Forest", shortName: "NFO", primaryColor: "#DD0000" },
   "Southampton": { name: "Southampton", shortName: "SOU", primaryColor: "#D71920" },
-  "Sunderland": { name: "Sunderland", shortName: "SUN", primaryColor: "#EB172B" },
   "Tottenham Hotspur": { name: "Tottenham Hotspur", shortName: "TOT", primaryColor: "#132257" },
-  "West Ham United": { name: "West Ham United", shortName: "WHU", primaryColor: "#7A263A" },
-  "Wolverhampton Wanderers": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },
 };
 
 export const PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = new Proxy(BASE_PREMIER_LEAGUE_TEAMS, {
@@ -52,8 +63,12 @@ export const PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = new Proxy(BASE_PRE
       return target[prop];
     }
     const mapped = ALIAS_LOOKUP[prop];
-    if (mapped && mapped in target) {
-      return target[mapped];
+    if (mapped) {
+      if (mapped in target) return target[mapped];
+      if (mapped in HISTORICAL_TEAMS) return HISTORICAL_TEAMS[mapped];
+    }
+    if (prop in HISTORICAL_TEAMS) {
+      return HISTORICAL_TEAMS[prop];
     }
     return undefined;
   },
@@ -125,7 +140,7 @@ export const MOCK_FIXTURES_GW28: FixtureCard[] = [
     gameweek: 28,
     kickoff_time: "2026-09-20T18:00:00Z",
     home_team: "Brighton",
-    away_team: "West Ham United",
+    away_team: "Hull City",
     status: "SCHEDULED",
     predictions: {
       dixon_coles: { prob_home: 0.47, prob_draw: 0.27, prob_away: 0.26 },
