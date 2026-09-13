@@ -10,6 +10,91 @@ from ml.data.schemas import KNOWN_PL_TEAMS
 from ml.models.base import BasePredictor
 
 
+TEAM_ALIASES: dict[str, str] = {
+    # Manchester United
+    "manchester united": "Manchester Utd",
+    "man united": "Manchester Utd",
+    "man utd": "Manchester Utd",
+    "manchester united fc": "Manchester Utd",
+    "manchester utd": "Manchester Utd",
+
+    # Manchester City
+    "manchester city": "Manchester City",
+    "man city": "Manchester City",
+    "manchester city fc": "Manchester City",
+
+    # Tottenham
+    "tottenham hotspur": "Tottenham",
+    "tottenham hotspur fc": "Tottenham",
+    "tottenham": "Tottenham",
+    "spurs": "Tottenham",
+
+    # Newcastle
+    "newcastle united": "Newcastle",
+    "newcastle united fc": "Newcastle",
+    "newcastle": "Newcastle",
+
+    # West Ham
+    "west ham united": "West Ham",
+    "west ham united fc": "West Ham",
+    "west ham": "West Ham",
+
+    # Wolverhampton
+    "wolverhampton wanderers": "Wolverhampton",
+    "wolverhampton wanderers fc": "Wolverhampton",
+    "wolverhampton": "Wolverhampton",
+    "wolves": "Wolverhampton",
+
+    # Brighton
+    "brighton & hove albion": "Brighton",
+    "brighton and hove albion": "Brighton",
+    "brighton & hove albion fc": "Brighton",
+    "brighton": "Brighton",
+
+    # Bournemouth
+    "afc bournemouth": "Bournemouth",
+    "bournemouth": "Bournemouth",
+
+    # Nottingham Forest
+    "nottingham forest": "Nottingham Forest",
+    "nottingham forest fc": "Nottingham Forest",
+    "nott'm forest": "Nottingham Forest",
+    "nottingham": "Nottingham Forest",
+
+    # Leicester
+    "leicester city": "Leicester",
+    "leicester city fc": "Leicester",
+    "leicester": "Leicester",
+
+    # Ipswich
+    "ipswich town": "Ipswich",
+    "ipswich town fc": "Ipswich",
+    "ipswich": "Ipswich",
+
+    # Sheffield United
+    "sheffield united": "Sheffield Utd",
+    "sheffield united fc": "Sheffield Utd",
+    "sheffield utd": "Sheffield Utd",
+
+    # Leeds
+    "leeds united": "Leeds",
+    "leeds united fc": "Leeds",
+    "leeds": "Leeds",
+
+    # Luton
+    "luton town": "Luton",
+    "luton town fc": "Luton",
+    "luton": "Luton",
+}
+
+
+def canonicalize_team_name(name: str) -> str:
+    """Map user/UI team name variations to canonical model team names."""
+    if not name:
+        return name
+    return TEAM_ALIASES.get(name.strip().lower(), name.strip())
+
+
 class PredictionService:
     """Service providing match prediction operations."""
 
@@ -28,20 +113,23 @@ class PredictionService:
         """Predict match outcome probabilities, most likely score, and distribution.
 
         Args:
-            home_team: Canonical home team name.
-            away_team: Canonical away team name.
+            home_team: Canonical or alias home team name.
+            away_team: Canonical or alias away team name.
             model_name: 'dixon_coles' or 'xgboost'.
 
         Returns:
             Dict matching MatchPrediction schema.
         """
+        c_home = canonicalize_team_name(home_team)
+        c_away = canonicalize_team_name(away_team)
+
         model = self.get_active_model(model_name)
         model_teams = getattr(model, "teams", getattr(model, "_teams", []))
         known_pool = set(model_teams) | KNOWN_PL_TEAMS
-        for team in [home_team, away_team]:
-            if team not in known_pool:
+        for raw, c_team in [(home_team, c_home), (away_team, c_away)]:
+            if c_team not in known_pool:
                 known = ", ".join(sorted(known_pool))
-                raise ValueError(f"Unknown team '{team}'. Known teams: {known}")
+                raise ValueError(f"Unknown team '{raw}'. Known teams: {known}")
 
         has_allow = hasattr(model, "allow_unknown")
         prev_allow = getattr(model, "allow_unknown", False)
@@ -49,14 +137,14 @@ class PredictionService:
             setattr(model, "allow_unknown", True)
 
         try:
-            proba = model.predict_proba(home_team, away_team)
+            proba = model.predict_proba(c_home, c_away)
             score = (
-                model.predict_most_likely_score(home_team, away_team)
+                model.predict_most_likely_score(c_home, c_away)
                 if hasattr(model, "predict_most_likely_score")
                 else None
             )
             dist = (
-                model.predict_score_distribution(home_team, away_team)
+                model.predict_score_distribution(c_home, c_away)
                 if hasattr(model, "predict_score_distribution")
                 else None
             )
@@ -85,12 +173,15 @@ class PredictionService:
         dc_pred = self.predict_match(home_team, away_team, model_name="dixon_coles")
         xgb_pred = self.predict_match(home_team, away_team, model_name="xgboost")
 
+        c_home = canonicalize_team_name(home_team)
+        c_away = canonicalize_team_name(away_team)
+
         xgb_features = {}
         try:
             xgb_model = self.get_active_model("xgboost")
             if hasattr(xgb_model, "get_team_profile"):
-                h_prof = xgb_model.get_team_profile(home_team) or {}
-                a_prof = xgb_model.get_team_profile(away_team) or {}
+                h_prof = xgb_model.get_team_profile(c_home) or {}
+                a_prof = xgb_model.get_team_profile(c_away) or {}
                 if "current_elo" in h_prof and "current_elo" in a_prof:
                     xgb_features["elo_diff"] = round(h_prof["current_elo"] - a_prof["current_elo"], 2)
                 if "rolling_sot" in h_prof and "rolling_sot" in a_prof:
@@ -158,29 +249,31 @@ class PredictionService:
 
     def get_team_strength(self, team_name: str) -> dict[str, Any]:
         """Return attack and defense parameters for team."""
+        c_team = canonicalize_team_name(team_name)
         model = self.get_active_model("dixon_coles")
         strengths = model.get_team_strengths()
         if strengths is None:
             raise ValueError(
                 f"Active model '{model.model_name}' does not provide attack/defense parameter decompositions."
             )
-        if team_name not in strengths:
+        if c_team not in strengths:
             known = ", ".join(sorted(strengths.keys()))
             raise ValueError(f"Unknown team '{team_name}'. Known teams: {known}")
         return {
             "team": team_name,
-            "attack": round(strengths[team_name]["attack"], 4),
-            "defense": round(strengths[team_name]["defense"], 4),
+            "attack": round(strengths[c_team]["attack"], 4),
+            "defense": round(strengths[c_team]["defense"], 4),
         }
 
     def get_team_profile(self, team_name: str) -> dict[str, Any]:
         """Return combined profile with Poisson strengths and XGBoost/Elo stats."""
+        c_team = canonicalize_team_name(team_name)
         dc_strengths = self.get_team_strength(team_name)
         xgb_profile = {}
         try:
             xgb_model = self.get_active_model("xgboost")
             if hasattr(xgb_model, "get_team_profile"):
-                xgb_profile = xgb_model.get_team_profile(team_name) or {}
+                xgb_profile = xgb_model.get_team_profile(c_team) or {}
         except Exception:
             pass
 

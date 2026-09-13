@@ -36,7 +36,7 @@ function SimulatorContent() {
       const res = await api.compareMatch(h, a);
       cacheRef.current.set(cacheKey, res);
       setData(res);
-    } catch {
+    } catch (err: unknown) {
       const fallback: ComparePredictionResponse = {
         home_team: h,
         away_team: a,
@@ -66,7 +66,11 @@ function SimulatorContent() {
         },
       };
       setData(fallback);
-      setError("Operating offline: displaying research simulation snapshot. Live FastAPI backend is offline.");
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Operating offline: displaying research simulation snapshot. Live FastAPI backend is offline.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -24,6 +24,21 @@ export const PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Southampton": { name: "Southampton", shortName: "SOU", primaryColor: "#D71920" },
   "Tottenham Hotspur": { name: "Tottenham Hotspur", shortName: "TOT", primaryColor: "#132257" },
   "West Ham United": { name: "West Ham United", shortName: "WHU", primaryColor: "#7A263A" },
+  "Wolverhampton Wanderers": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },
+  // Aliases and canonical model mappings
+  "Manchester Utd": { name: "Manchester United", shortName: "MUN", primaryColor: "#DA291C" },
+  "Tottenham": { name: "Tottenham Hotspur", shortName: "TOT", primaryColor: "#132257" },
+  "Newcastle": { name: "Newcastle United", shortName: "NEW", primaryColor: "#241F20" },
+  "West Ham": { name: "West Ham United", shortName: "WHU", primaryColor: "#7A263A" },
+  "Wolverhampton": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },
+  "Wolves": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },
+  "Leicester": { name: "Leicester City", shortName: "LEI", primaryColor: "#003090" },
+  "Ipswich": { name: "Ipswich Town", shortName: "IPS", primaryColor: "#003399" },
+  "Sheffield Utd": { name: "Sheffield United", shortName: "SHU", primaryColor: "#EE2737" },
+  "Sheffield United": { name: "Sheffield United", shortName: "SHU", primaryColor: "#EE2737" },
+  "Burnley": { name: "Burnley", shortName: "BUR", primaryColor: "#6C1D45" },
+  "Luton": { name: "Luton", shortName: "LUT", primaryColor: "#FF6600" },
+  "Leeds": { name: "Leeds", shortName: "LEE", primaryColor: "#FFCD00" },
 };
 
 import type { FixtureCard } from "@/types";
