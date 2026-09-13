@@ -18,6 +18,7 @@ from scripts.sync_pipeline import (
     run_phase_b2_xgboost,
     score_gate_2b_audit,
 )
+from ml.data.season import derive_current_season as derive_current_season_import
 
 
 @pytest.fixture
@@ -222,4 +223,67 @@ def test_phase_b1_two_tier_recovery(test_db):
 
         old = session.query(ModelArtifact).filter_by(model_name="dixon_coles", version="dc_old").one()
         assert old.is_active is False
+
+
+def test_phase_a_dynamic_season_from_api(test_db):
+    """When season_code/label are None, Phase A derives them from the API response."""
+    engine, session = test_db
+
+    sample_csv = (
+        "Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,HTHG,HTAG,HS,AS,HST,AST,AvgH,AvgD,AvgA\n"
+        "17/08/2026,Arsenal,Chelsea,2,1,H,1,0,12,8,5,3,1.80,3.60,4.20\n"
+    )
+    # API returns fixtures tagged as 2026-27 season
+    mock_fixtures = [
+        {
+            "id": 5001,
+            "season": "2026-27",
+            "gameweek": 1,
+            "kickoff_time": "2026-08-17T14:00:00Z",
+            "home_team": "Arsenal",
+            "away_team": "Chelsea",
+            "status": "SCHEDULED",
+        }
+    ]
+
+    with patch("scripts.sync_pipeline.download_season_csv", return_value=sample_csv), \
+         patch("scripts.sync_pipeline.FootballDataClient") as MockClient:
+        instance = MockClient.return_value
+        instance.get_scheduled_fixtures.return_value = mock_fixtures
+
+        # season_code=None, season_label=None → should derive from API
+        new_matches = run_phase_a_ingestion(session, api_key="test_key")
+
+        assert len(new_matches) == 1
+        # The derived season should be "2026-27" from the API, not a hardcoded value
+        assert new_matches[0]["season"] == "2026-27"
+
+        fixtures_in_db = session.query(Fixture).all()
+        assert len(fixtures_in_db) == 1
+        assert fixtures_in_db[0].season == "2026-27"
+
+
+def test_phase_a_api_down_falls_back_to_date(test_db):
+    """When the API is unreachable, Phase A falls back to date-based season derivation."""
+    engine, session = test_db
+
+    sample_csv = (
+        "Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,HTHG,HTAG,HS,AS,HST,AST,AvgH,AvgD,AvgA\n"
+        "17/08/2026,Arsenal,Chelsea,2,1,H,1,0,12,8,5,3,1.80,3.60,4.20\n"
+    )
+
+    with patch("scripts.sync_pipeline.download_season_csv", return_value=sample_csv), \
+         patch("scripts.sync_pipeline.FootballDataClient") as MockClient, \
+         patch("scripts.sync_pipeline.derive_current_season", wraps=derive_current_season_import) as spy:
+        instance = MockClient.return_value
+        instance.get_scheduled_fixtures.side_effect = ConnectionError("API offline")
+
+        # Should not crash — falls back to date-math
+        new_matches = run_phase_a_ingestion(session, api_key="test_key")
+
+        # derive_current_season was called with api_season=None (API failed)
+        spy.assert_called_once()
+        call_kwargs = spy.call_args
+        assert call_kwargs[1].get("api_season") is None or call_kwargs[0][0] is None
+
 

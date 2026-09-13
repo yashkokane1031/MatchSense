@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 # Season codes: "2223" = 2022/23, "2324" = 2023/24, etc.
 CSV_URL_TEMPLATE = "https://www.football-data.co.uk/mmz4281/{season_code}/E0.csv"
 
-# 4 seasons: enough data, minimal team churn (~28-30 distinct teams)
+# Legacy constant — DEPRECATED. Use default_training_seasons() instead.
+# Kept only for backward compatibility with code that imports DEFAULT_SEASONS.
 DEFAULT_SEASONS: list[dict[str, str]] = [
     {"code": "2223", "label": "2022-23"},
     {"code": "2324", "label": "2023-24"},
@@ -26,72 +27,40 @@ DEFAULT_SEASONS: list[dict[str, str]] = [
     {"code": "2526", "label": "2025-26"},
 ]
 
+
+def default_training_seasons() -> list[dict[str, str]]:
+    """Compute the 4-season training window ending at the current season.
+
+    Derives the current season dynamically from the system date (fallback path).
+    When called from sync_pipeline.py, the API-reported season should be preferred
+    by passing the result of derive_current_season(api_season=...) to
+    derive_training_window() directly.
+    """
+    from ml.data.season import derive_current_season, derive_training_window
+    code, _ = derive_current_season()
+    return derive_training_window(code, window_size=4)
+
 # Columns to extract from CSV
 COLUMNS_CORE = ["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
 COLUMNS_HALF_TIME = ["HTHG", "HTAG"]
 COLUMNS_STATS = ["HS", "AS", "HST", "AST", "HC", "AC", "HF", "AF", "HY", "AY", "HR", "AR"]
 COLUMNS_ODDS = ["AvgH", "AvgD", "AvgA", "B365H", "B365D", "B365A"]
 
-# Team name normalization: maps football-data.co.uk names to canonical names.
-# football-data.co.uk is mostly consistent, but handle known edge cases.
-TEAM_NAME_MAP: dict[str, str] = {
-    "Man United": "Manchester Utd",
-    "Man City": "Manchester City",
-    "Nott'm Forest": "Nottingham Forest",
-    "Nottingham": "Nottingham Forest",
-    "Sheffield United": "Sheffield Utd",
-    "Spurs": "Tottenham",
-    "Wolves": "Wolverhampton",
-}
+from ml.data.normalization import normalize_team, TEAM_CANONICAL_MAP
+
+# Maintained for backwards compatibility with imports
+TEAM_NAME_MAP: dict[str, str] = TEAM_CANONICAL_MAP
+FOOTBALL_DATA_ORG_NAME_MAP: dict[str, str] = TEAM_CANONICAL_MAP
 
 
 def normalize_team_name(name: str) -> str:
-    """Normalize a team name to its canonical form.
-
-    Args:
-        name: Raw team name from the CSV.
-
-    Returns:
-        Canonical team name. If no mapping exists, returns the input unchanged.
-    """
-    return TEAM_NAME_MAP.get(name, name)
-
-
-FOOTBALL_DATA_ORG_NAME_MAP: dict[str, str] = {
-    "Arsenal FC": "Arsenal",
-    "Aston Villa FC": "Aston Villa",
-    "AFC Bournemouth": "Bournemouth",
-    "Brentford FC": "Brentford",
-    "Brighton & Hove Albion FC": "Brighton",
-    "Burnley FC": "Burnley",
-    "Chelsea FC": "Chelsea",
-    "Crystal Palace FC": "Crystal Palace",
-    "Everton FC": "Everton",
-    "Fulham FC": "Fulham",
-    "Ipswich Town FC": "Ipswich",
-    "Leeds United FC": "Leeds",
-    "Leicester City FC": "Leicester",
-    "Liverpool FC": "Liverpool",
-    "Luton Town FC": "Luton",
-    "Manchester City FC": "Manchester City",
-    "Manchester United FC": "Manchester Utd",
-    "Newcastle United FC": "Newcastle",
-    "Nottingham Forest FC": "Nottingham Forest",
-    "Sheffield United FC": "Sheffield Utd",
-    "Southampton FC": "Southampton",
-    "Tottenham Hotspur FC": "Tottenham",
-    "West Ham United FC": "West Ham",
-    "Wolverhampton Wanderers FC": "Wolverhampton",
-}
+    """Normalize a team name to its canonical form."""
+    return normalize_team(name)
 
 
 def normalize_football_data_org_name(raw_name: str) -> str:
     """Map Football-Data.org official club names to MatchSense canonical names."""
-    if raw_name in FOOTBALL_DATA_ORG_NAME_MAP:
-        return FOOTBALL_DATA_ORG_NAME_MAP[raw_name]
-    # Suffix stripping fallback
-    stripped = raw_name.replace(" FC", "").replace("AFC ", "").strip()
-    return stripped
+    return normalize_team(raw_name)
 
 
 def download_season_csv(season_code: str, cache_dir: Path | None = None) -> str:
@@ -223,14 +192,14 @@ def load_all_seasons(
 
     Args:
         seasons: List of season configs with 'code' and 'label' keys.
-            Defaults to DEFAULT_SEASONS.
+            Defaults to default_training_seasons() (dynamic 4-season window).
         cache_dir: Optional directory to cache downloaded CSVs.
 
     Returns:
         Combined DataFrame of all seasons, sorted by date.
     """
     if seasons is None:
-        seasons = DEFAULT_SEASONS
+        seasons = default_training_seasons()
 
     all_dfs: list[pd.DataFrame] = []
     for season in seasons:

@@ -26,6 +26,7 @@ from backend.core.database import SessionLocal
 from backend.models.schemas import Fixture, Match, ModelArtifact
 from ml.data.football_data_api import FootballDataClient
 from ml.data.ingestion import download_season_csv, parse_season_csv
+from ml.data.season import derive_current_season, derive_season_from_date
 from ml.evaluation.metrics import compute_rps
 from ml.models.dixon_coles import DixonColesModel
 from ml.models.xgboost_model import XGBoostPredictor
@@ -77,11 +78,36 @@ def check_gate_2a_xgboost(probs: dict[str, float]) -> tuple[bool, str]:
 def run_phase_a_ingestion(
     session: Session,
     api_key: str = "",
-    season_code: str = "2526",
-    season_label: str = "2025-26",
+    season_code: str | None = None,
+    season_label: str | None = None,
 ) -> list[dict]:
     """Ingest latest completed matches and upcoming fixtures into DB. Returns new completed matches."""
     logger.info("=== Phase A: Ingesting Ground-Truth Matches & Upcoming Schedules ===")
+
+    # --- Season derivation: API-first, date-math fallback ---
+    # Step 1: Probe the Football-Data.org API for its reported active season.
+    # This runs BEFORE any DB writes, so a wrong season never gets committed.
+    api_season: tuple[str, str] | None = None
+    client = FootballDataClient(api_key=api_key)
+    fixtures_data: list[dict] = []
+    try:
+        fixtures_data = client.get_scheduled_fixtures()
+        if fixtures_data:
+            # Extract season from the first fixture's API response
+            first_season = fixtures_data[0].get("season", "")
+            if first_season and "-" in first_season:
+                # season_label is like "2026-27", derive code from it
+                parts = first_season.split("-")
+                api_code = parts[0][-2:] + parts[1]
+                api_season = (api_code, first_season)
+                logger.info("API reports active season: %s (%s)", first_season, api_code)
+    except Exception as e:
+        logger.warning("Football-Data.org API unavailable for season probe: %s", e)
+
+    # Step 2: Derive season — API answer wins when available.
+    if season_code is None or season_label is None:
+        season_code, season_label = derive_current_season(api_season=api_season)
+    logger.info("Active season resolved: %s (%s)", season_label, season_code)
 
     # 1. Fetch CSV
     new_matches = []
@@ -128,32 +154,27 @@ def run_phase_a_ingestion(
     except Exception as e:
         logger.warning("Failed to fetch or parse season CSV: %s", e)
 
-    # 2. Fetch upcoming fixtures
-    client = FootballDataClient(api_key=api_key)
-    try:
-        fixtures_data = client.get_scheduled_fixtures()
-        for f in fixtures_data:
-            existing_f = session.query(Fixture).filter_by(id=f["id"]).first()
-            kickoff = pd.to_datetime(f["kickoff_time"]).to_pydatetime()
-            if not existing_f:
-                session.add(
-                    Fixture(
-                        id=f["id"],
-                        season=f["season"],
-                        gameweek=f["gameweek"],
-                        kickoff_time=kickoff,
-                        home_team=f["home_team"],
-                        away_team=f["away_team"],
-                        status=f["status"],
-                        precomputed_predictions={},
-                    )
+    # 2. Upsert upcoming fixtures (already fetched during season probe)
+    for f in fixtures_data:
+        existing_f = session.query(Fixture).filter_by(id=f["id"]).first()
+        kickoff = pd.to_datetime(f["kickoff_time"]).to_pydatetime()
+        if not existing_f:
+            session.add(
+                Fixture(
+                    id=f["id"],
+                    season=f["season"],
+                    gameweek=f["gameweek"],
+                    kickoff_time=kickoff,
+                    home_team=f["home_team"],
+                    away_team=f["away_team"],
+                    status=f["status"],
+                    precomputed_predictions={},
                 )
-            else:
-                existing_f.kickoff_time = kickoff
-                existing_f.gameweek = f["gameweek"]
-                existing_f.status = f["status"]
-    except Exception as e:
-        logger.warning("Failed to fetch Football-Data.org fixtures: %s", e)
+            )
+        else:
+            existing_f.kickoff_time = kickoff
+            existing_f.gameweek = f["gameweek"]
+            existing_f.status = f["status"]
 
     session.commit()
     logger.info("Phase A committed successfully. Ingested %d new matches.", len(new_matches))
