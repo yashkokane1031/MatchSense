@@ -168,3 +168,18 @@ class TestXGBoostApiEndpoints:
         )
         assert resp_fake.status_code == 404
         assert "Unknown team" in resp_fake.json()["detail"]
+
+
+def test_health_response_schema(client):
+    """Verify health endpoint returns strictly typed HealthResponse model."""
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] in ["healthy", "degraded"]
+    assert isinstance(data["model_loaded"], bool)
+    assert isinstance(data["database_connected"], bool)
+    assert isinstance(data["models"], dict)
+    for model_name, info in data["models"].items():
+        assert "loaded" in info
+        assert isinstance(info["loaded"], bool)
+

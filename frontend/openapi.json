@@ -1,0 +1,700 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MatchSense API",
+    "description": "Premier League match predictor using the Dixon-Coles model. Provides match outcome probabilities and score distributions.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "description": "Return API health status, database connection, and model metadata.",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/head-to-head": {
+      "post": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Predict Head To Head",
+        "description": "Predict match outcome probabilities using chosen architecture.",
+        "operationId": "predict_head_to_head_api_v1_predictions_head_to_head_post",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(dixon_coles|xgboost)$",
+              "default": "dixon_coles",
+              "title": "Model"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeadToHeadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchPrediction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/compare": {
+      "post": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Compare Predictions",
+        "description": "Return side-by-side comparison of Dixon-Coles and XGBoost predictions.",
+        "operationId": "compare_predictions_api_v1_predictions_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeadToHeadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparePredictionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fixtures/upcoming": {
+      "get": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "List Upcoming Fixtures",
+        "description": "Return scheduled upcoming fixtures with dual-model predictions.",
+        "operationId": "list_upcoming_fixtures_api_v1_fixtures_upcoming_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FixtureCard"
+                  },
+                  "type": "array",
+                  "title": "Response List Upcoming Fixtures Api V1 Fixtures Upcoming Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams": {
+      "get": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "List Teams",
+        "description": "Return all teams the model knows about.",
+        "operationId": "list_teams_api_v1_teams_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response List Teams Api V1 Teams Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{team_name}/strengths": {
+      "get": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Get Team Strength",
+        "description": "Return a team's attack and defense strength parameters (Dixon-Coles).",
+        "operationId": "get_team_strength_api_v1_teams__team_name__strengths_get",
+        "parameters": [
+          {
+            "name": "team_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Team Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamStrength"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{team_name}/profile": {
+      "get": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Get Team Profile",
+        "description": "Return comprehensive team profile combining Poisson and rolling XGBoost stats.",
+        "operationId": "get_team_profile_api_v1_teams__team_name__profile_get",
+        "parameters": [
+          {
+            "name": "team_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Team Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ComparePredictionResponse": {
+        "properties": {
+          "home_team": {
+            "type": "string",
+            "title": "Home Team"
+          },
+          "away_team": {
+            "type": "string",
+            "title": "Away Team"
+          },
+          "dixon_coles": {
+            "$ref": "#/components/schemas/ModelPredictionBlock"
+          },
+          "xgboost": {
+            "$ref": "#/components/schemas/ModelPredictionBlock"
+          }
+        },
+        "type": "object",
+        "required": [
+          "home_team",
+          "away_team",
+          "dixon_coles",
+          "xgboost"
+        ],
+        "title": "ComparePredictionResponse"
+      },
+      "FixtureCard": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "gameweek": {
+            "type": "integer",
+            "title": "Gameweek"
+          },
+          "kickoff_time": {
+            "type": "string",
+            "title": "Kickoff Time"
+          },
+          "home_team": {
+            "type": "string",
+            "title": "Home Team"
+          },
+          "away_team": {
+            "type": "string",
+            "title": "Away Team"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "predictions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Predictions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "gameweek",
+          "kickoff_time",
+          "home_team",
+          "away_team",
+          "status",
+          "predictions"
+        ],
+        "title": "FixtureCard"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HeadToHeadRequest": {
+        "properties": {
+          "home_team": {
+            "type": "string",
+            "title": "Home Team"
+          },
+          "away_team": {
+            "type": "string",
+            "title": "Away Team"
+          }
+        },
+        "type": "object",
+        "required": [
+          "home_team",
+          "away_team"
+        ],
+        "title": "HeadToHeadRequest",
+        "description": "Request body for a head-to-head prediction."
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "model_loaded": {
+            "type": "boolean",
+            "title": "Model Loaded"
+          },
+          "database_connected": {
+            "type": "boolean",
+            "title": "Database Connected"
+          },
+          "models": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ModelStatus"
+            },
+            "type": "object",
+            "title": "Models"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status",
+          "model_loaded",
+          "database_connected",
+          "models"
+        ],
+        "title": "HealthResponse"
+      },
+      "MatchPrediction": {
+        "properties": {
+          "home_team": {
+            "type": "string",
+            "title": "Home Team"
+          },
+          "away_team": {
+            "type": "string",
+            "title": "Away Team"
+          },
+          "prob_home": {
+            "type": "number",
+            "title": "Prob Home"
+          },
+          "prob_draw": {
+            "type": "number",
+            "title": "Prob Draw"
+          },
+          "prob_away": {
+            "type": "number",
+            "title": "Prob Away"
+          },
+          "predicted_score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePrediction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score_distribution": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Distribution"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "home_team",
+          "away_team",
+          "prob_home",
+          "prob_draw",
+          "prob_away",
+          "model"
+        ],
+        "title": "MatchPrediction",
+        "description": "Full prediction for a match."
+      },
+      "ModelPredictionBlock": {
+        "properties": {
+          "prob_home": {
+            "type": "number",
+            "title": "Prob Home"
+          },
+          "prob_draw": {
+            "type": "number",
+            "title": "Prob Draw"
+          },
+          "prob_away": {
+            "type": "number",
+            "title": "Prob Away"
+          },
+          "predicted_score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePrediction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score_distribution": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Distribution"
+          },
+          "features": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prob_home",
+          "prob_draw",
+          "prob_away"
+        ],
+        "title": "ModelPredictionBlock"
+      },
+      "ModelStatus": {
+        "properties": {
+          "loaded": {
+            "type": "boolean",
+            "title": "Loaded"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loaded"
+        ],
+        "title": "ModelStatus"
+      },
+      "ScorePrediction": {
+        "properties": {
+          "home": {
+            "type": "integer",
+            "title": "Home"
+          },
+          "away": {
+            "type": "integer",
+            "title": "Away"
+          }
+        },
+        "type": "object",
+        "required": [
+          "home",
+          "away"
+        ],
+        "title": "ScorePrediction",
+        "description": "Predicted most likely score."
+      },
+      "TeamProfileResponse": {
+        "properties": {
+          "team": {
+            "type": "string",
+            "title": "Team"
+          },
+          "dixon_coles": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Dixon Coles"
+          },
+          "xgboost": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Xgboost"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team",
+          "dixon_coles",
+          "xgboost"
+        ],
+        "title": "TeamProfileResponse"
+      },
+      "TeamStrength": {
+        "properties": {
+          "team": {
+            "type": "string",
+            "title": "Team"
+          },
+          "attack": {
+            "type": "number",
+            "title": "Attack"
+          },
+          "defense": {
+            "type": "number",
+            "title": "Defense"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team",
+          "attack",
+          "defense"
+        ],
+        "title": "TeamStrength",
+        "description": "Attack and defense strengths for a team."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
