@@ -121,8 +121,28 @@ class ModelManager:
             if dc_path.exists():
                 logger.info("Loading Dixon-Coles from local fallback file: %s", dc_path)
                 try:
-                    with open(dc_path, "rb") as f:
-                        model = pickle.load(f)
+                    from ml.models.dixon_coles import DixonColesModel
+                    try:
+                        model = DixonColesModel.load(dc_path)
+                    except Exception:
+                        with open(dc_path, "rb") as f:
+                            loaded = pickle.load(f)
+                        if isinstance(loaded, DixonColesModel):
+                            model = loaded
+                        elif isinstance(loaded, dict) and "teams" in loaded:
+                            model = DixonColesModel(xi=loaded.get("xi", 0.005), allow_unknown=loaded.get("allow_unknown", False))
+                            model._teams = loaded["teams"]
+                            model._team_to_idx = {t: i for i, t in enumerate(model._teams)}
+                            model._reference_team = loaded["reference_team"]
+                            model._attack = loaded["attack"]
+                            model._defense = loaded["defense"]
+                            model._home_advantage = loaded["home_advantage"]
+                            model._rho = loaded["rho"]
+                            model._n_matches = loaded["n_matches"]
+                            model._fit_date = loaded["fit_date"]
+                            model._is_fitted = True
+                        else:
+                            raise ValueError(f"Unknown Dixon-Coles format in {dc_path}")
                     self.set_model(
                         "dixon_coles",
                         model,
