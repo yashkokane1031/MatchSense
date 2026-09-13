@@ -25,7 +25,7 @@ from backend.core.config import settings
 from backend.core.database import SessionLocal
 from backend.models.schemas import Fixture, Match, ModelArtifact
 from ml.data.football_data_api import FootballDataClient
-from ml.data.ingestion import download_season_csv, parse_season_csv
+from ml.data.ingestion import download_season_csv, load_all_seasons, parse_season_csv
 from ml.data.season import derive_current_season, derive_season_from_date
 from ml.evaluation.metrics import compute_rps
 from ml.models.dixon_coles import DixonColesModel
@@ -280,7 +280,11 @@ def run_phase_b1_dixon_coles(
         model = None
         new_version = f"dc_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
 
-        if not dry_run_only and matches_df is not None:
+        if not dry_run_only:
+            if matches_df is None:
+                logger.info("matches_df not provided; loading via load_all_seasons()")
+                matches_df = load_all_seasons()
+
             # 1. Check for prior active model to warm-start
             active_row = session.query(ModelArtifact).filter_by(model_name="dixon_coles", is_active=True).first()
             warm_params = None
@@ -321,6 +325,15 @@ def run_phase_b1_dixon_coles(
                 artifact_bytes=compressed,
             )
             session.add(artifact)
+
+            # Update local fallback pickle file
+            try:
+                Path(settings.model_path).parent.mkdir(parents=True, exist_ok=True)
+                with open(settings.model_path, "wb") as f:
+                    pickle.dump(model, f)
+                logger.info("Updated local Dixon-Coles fallback file at %s", settings.model_path)
+            except Exception as e:
+                logger.warning("Could not update local Dixon-Coles fallback file: %s", e)
 
         # Update fixtures using atomic jsonb_set with COALESCE
         if fixture_predictions:
@@ -365,7 +378,11 @@ def run_phase_b2_xgboost(
         model = None
         new_version = f"xgb_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
 
-        if not dry_run_only and matches_df is not None:
+        if not dry_run_only:
+            if matches_df is None:
+                logger.info("matches_df not provided; loading via load_all_seasons()")
+                matches_df = load_all_seasons()
+
             logger.info("Fitting XGBoostPredictor on matches window")
             model = XGBoostPredictor()
             model.fit(matches_df)
@@ -390,6 +407,16 @@ def run_phase_b2_xgboost(
                 artifact_bytes=compressed,
             )
             session.add(artifact)
+
+            # Update local fallback pickle file
+            try:
+                xgb_path = Path("data/models/xgboost_latest.pkl")
+                xgb_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(xgb_path, "wb") as f:
+                    pickle.dump(model, f)
+                logger.info("Updated local XGBoost fallback file at %s", xgb_path)
+            except Exception as e:
+                logger.warning("Could not update local XGBoost fallback file: %s", e)
 
         # Update fixtures using atomic jsonb_set with COALESCE
         if fixture_predictions:
@@ -430,8 +457,12 @@ def main():
         # Load pre-match predictions from fixtures that recently finished
         logger.info("Phase A complete. Proceeding to Model Training phases.")
 
+        # Load training dataset across sliding window once for both models
+        matches_df = load_all_seasons()
+        logger.info("Loaded %d matches across %s for model training.", len(matches_df), matches_df["Season"].unique().tolist())
+
         # Phase B1: Dixon-Coles
-        b1_ok = run_phase_b1_dixon_coles(session)
+        b1_ok = run_phase_b1_dixon_coles(session, matches_df=matches_df)
         if b1_ok:
             session.commit()
             logger.info("Phase B1 committed successfully.")
@@ -440,7 +471,7 @@ def main():
             logger.warning("Phase B1 failed. Retained active Dixon-Coles model.")
 
         # Phase B2: XGBoost
-        b2_ok = run_phase_b2_xgboost(session)
+        b2_ok = run_phase_b2_xgboost(session, matches_df=matches_df)
         if b2_ok:
             session.commit()
             logger.info("Phase B2 committed successfully.")

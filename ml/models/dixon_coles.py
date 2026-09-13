@@ -392,6 +392,27 @@ class DixonColesModel(BasePredictor):
         self._n_matches = len(matches)
         self._fit_date = str(matches["Date"].max().date())
 
+        # For newly promoted / small-sample teams (< 5 matches in training window),
+        # pure MLE can collapse to the optimization boundary (0.01) if 0 goals scored or conceded.
+        # Regularize small-sample boundary collapse by shrinking to empirical promoted priors.
+        team_counts = pd.concat([
+            matches["HomeTeam"].value_counts(),
+            matches["AwayTeam"].value_counts(),
+        ]).groupby(level=0).sum()
+        established_att = [a for t, a in self._attack.items() if team_counts.get(t, 0) >= 10]
+        established_def = [d for t, d in self._defense.items() if team_counts.get(t, 0) >= 10]
+        if established_att and established_def:
+            p25_att = float(np.percentile(established_att, 25))
+            p75_def = float(np.percentile(established_def, 75))
+            for t, count in team_counts.items():
+                if count < 5:
+                    if self._attack.get(t, 1.0) < 0.15:
+                        logger.info("Shrinking small-sample team '%s' attack from %.4f to empirical prior %.4f", t, self._attack[t], p25_att)
+                        self._attack[t] = p25_att
+                    if self._defense.get(t, 1.0) < 0.15:
+                        logger.info("Shrinking small-sample team '%s' defense from %.4f to empirical prior %.4f", t, self._defense[t], p75_def)
+                        self._defense[t] = p75_def
+
         logger.info(
             "Fitted: home_advantage=%.3f, rho=%.4f, converged=%s",
             self._home_advantage, self._rho, self._converged,
