@@ -58,3 +58,6 @@ frontend/.next/
 frontend/out/
 *.tsbuildinfo
 
+# Graphify cache
+graphify-out/cache/
+
