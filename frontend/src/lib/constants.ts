@@ -17,6 +17,8 @@ const ALIAS_LOOKUP: Record<string, string> = {
   "Leicester": "Leicester City",
   "Ipswich": "Ipswich Town",
   "Sheffield Utd": "Sheffield United",
+  "Coventry": "Coventry City",
+  "Sunderland AFC": "Sunderland",
 };
 
 const BASE_PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
@@ -26,6 +28,7 @@ const BASE_PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Brentford": { name: "Brentford", shortName: "BRE", primaryColor: "#E30613" },
   "Brighton": { name: "Brighton", shortName: "BHA", primaryColor: "#0057B8" },
   "Chelsea": { name: "Chelsea", shortName: "CHE", primaryColor: "#034694" },
+  "Coventry City": { name: "Coventry City", shortName: "COV", primaryColor: "#00A3E0" },
   "Crystal Palace": { name: "Crystal Palace", shortName: "CRY", primaryColor: "#1B458F" },
   "Everton": { name: "Everton", shortName: "EVE", primaryColor: "#003399" },
   "Fulham": { name: "Fulham", shortName: "FUL", primaryColor: "#FFFFFF" },
@@ -37,6 +40,7 @@ const BASE_PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Newcastle United": { name: "Newcastle United", shortName: "NEW", primaryColor: "#241F20" },
   "Nottingham Forest": { name: "Nottingham Forest", shortName: "NFO", primaryColor: "#DD0000" },
   "Southampton": { name: "Southampton", shortName: "SOU", primaryColor: "#D71920" },
+  "Sunderland": { name: "Sunderland", shortName: "SUN", primaryColor: "#EB172B" },
   "Tottenham Hotspur": { name: "Tottenham Hotspur", shortName: "TOT", primaryColor: "#132257" },
   "West Ham United": { name: "West Ham United", shortName: "WHU", primaryColor: "#7A263A" },
   "Wolverhampton Wanderers": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },

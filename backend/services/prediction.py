@@ -85,6 +85,15 @@ TEAM_ALIASES: dict[str, str] = {
     "luton town": "Luton",
     "luton town fc": "Luton",
     "luton": "Luton",
+
+    # Coventry
+    "coventry city": "Coventry",
+    "coventry city fc": "Coventry",
+    "coventry": "Coventry",
+
+    # Sunderland
+    "sunderland afc": "Sunderland",
+    "sunderland": "Sunderland",
 }
 
 
@@ -257,6 +266,17 @@ class PredictionService:
                 f"Active model '{model.model_name}' does not provide attack/defense parameter decompositions."
             )
         if c_team not in strengths:
+            if c_team in KNOWN_PL_TEAMS:
+                import numpy as np
+                att_vals = [s["attack"] for s in strengths.values()]
+                def_vals = [s["defense"] for s in strengths.values()]
+                default_att = float(np.percentile(att_vals, 25)) if att_vals else 0.85
+                default_def = float(np.percentile(def_vals, 75)) if def_vals else 1.15
+                return {
+                    "team": team_name,
+                    "attack": round(default_att, 4),
+                    "defense": round(default_def, 4),
+                }
             known = ", ".join(sorted(strengths.keys()))
             raise ValueError(f"Unknown team '{team_name}'. Known teams: {known}")
         return {
