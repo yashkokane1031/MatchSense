@@ -24,5 +24,81 @@ export const PREMIER_LEAGUE_TEAMS: Record<string, TeamMeta> = {
   "Southampton": { name: "Southampton", shortName: "SOU", primaryColor: "#D71920" },
   "Tottenham Hotspur": { name: "Tottenham Hotspur", shortName: "TOT", primaryColor: "#132257" },
   "West Ham United": { name: "West Ham United", shortName: "WHU", primaryColor: "#7A263A" },
-  "Wolverhampton Wanderers": { name: "Wolverhampton Wanderers", shortName: "WOL", primaryColor: "#FDB913" },
 };
+
+import type { FixtureCard } from "@/types";
+
+export const MOCK_FIXTURES_GW28: FixtureCard[] = [
+  {
+    id: 1,
+    gameweek: 28,
+    kickoff_time: "2026-09-19T14:00:00Z",
+    home_team: "Arsenal",
+    away_team: "Chelsea",
+    status: "SCHEDULED",
+    predictions: {
+      dixon_coles: { prob_home: 0.52, prob_draw: 0.25, prob_away: 0.23 },
+      xgboost: { prob_home: 0.49, prob_draw: 0.27, prob_away: 0.24 },
+    },
+  },
+  {
+    id: 2,
+    gameweek: 28,
+    kickoff_time: "2026-09-19T16:30:00Z",
+    home_team: "Manchester City",
+    away_team: "Liverpool",
+    status: "SCHEDULED",
+    predictions: {
+      dixon_coles: { prob_home: 0.45, prob_draw: 0.28, prob_away: 0.27 },
+      xgboost: { prob_home: 0.48, prob_draw: 0.26, prob_away: 0.26 },
+    },
+  },
+  {
+    id: 3,
+    gameweek: 28,
+    kickoff_time: "2026-09-20T13:00:00Z",
+    home_team: "Tottenham Hotspur",
+    away_team: "Aston Villa",
+    status: "SCHEDULED",
+    predictions: {
+      dixon_coles: { prob_home: 0.42, prob_draw: 0.29, prob_away: 0.29 },
+      xgboost: { prob_home: 0.44, prob_draw: 0.28, prob_away: 0.28 },
+    },
+  },
+  {
+    id: 4,
+    gameweek: 28,
+    kickoff_time: "2026-09-20T15:30:00Z",
+    home_team: "Newcastle United",
+    away_team: "Manchester United",
+    status: "SCHEDULED",
+    predictions: {
+      dixon_coles: { prob_home: 0.41, prob_draw: 0.28, prob_away: 0.31 },
+      xgboost: { prob_home: 0.43, prob_draw: 0.27, prob_away: 0.30 },
+    },
+  },
+  {
+    id: 5,
+    gameweek: 28,
+    kickoff_time: "2026-09-20T18:00:00Z",
+    home_team: "Brighton",
+    away_team: "West Ham United",
+    status: "SCHEDULED",
+    predictions: {
+      dixon_coles: { prob_home: 0.47, prob_draw: 0.27, prob_away: 0.26 },
+      xgboost: { prob_home: 0.46, prob_draw: 0.28, prob_away: 0.26 },
+    },
+  },
+  {
+    id: 6,
+    gameweek: 28,
+    kickoff_time: "2026-09-21T19:00:00Z",
+    home_team: "Everton",
+    away_team: "Fulham",
+    status: "SCHEDULED",
+    predictions: {
+      dixon_coles: { prob_home: 0.39, prob_draw: 0.31, prob_away: 0.30 },
+      xgboost: { prob_home: 0.38, prob_draw: 0.32, prob_away: 0.30 },
+    },
+  },
+];

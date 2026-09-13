@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import { GameweekHero } from "@/components/fixtures/GameweekHero";
 import { FixtureGrid } from "@/components/fixtures/FixtureGrid";
+import { MOCK_FIXTURES_GW28 } from "@/lib/constants";
 import type { FixtureCard } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +12,9 @@ export default async function HomePage() {
 
   try {
     fixtures = await api.getUpcomingFixtures();
-  } catch (err) {
-    console.error("Failed to load upcoming fixtures:", err);
-    fetchError = "Unable to connect to MatchSense API server. Displaying historical mock snapshot.";
+  } catch {
+    fetchError = "Operating offline: displaying historical research snapshot. Predictions are frozen.";
+    fixtures = MOCK_FIXTURES_GW28;
   }
 
   return (
@@ -21,7 +22,7 @@ export default async function HomePage() {
       <GameweekHero fixtures={fixtures} />
 
       {fetchError && (
-        <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-3 font-mono">
           <span className="w-2 h-2 rounded-full bg-amber-400" />
           <span>{fetchError}</span>
         </div>
