@@ -62,13 +62,44 @@ CREATE TABLE fixtures (
     home_team VARCHAR(50) NOT NULL,               -- Canonical name
     away_team VARCHAR(50) NOT NULL,               -- Canonical name
     status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED', -- 'SCHEDULED' | 'TIMED' | 'POSTPONED' | 'FINISHED'
-    precomputed_predictions JSONB NULL,           -- Cached per-model predictions: {"dixon_coles": {...}, "xgboost": {...}}
+    precomputed_predictions JSONB NULL,           -- Cached per-model predictions with metadata
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_fixtures_upcoming 
     ON fixtures (status, kickoff_time);
 ```
+
+#### Per-Model Prediction Schema & Independent Freshness Tracking
+To guarantee independent model freshness without schema migrations, `precomputed_predictions` nests the model version and generation timestamp inside each model's block:
+
+```json
+{
+  "dixon_coles": {
+    "model_version": "v202526_gw28_20260913_1400",
+    "computed_at": "2026-09-13T03:02:15Z",
+    "prob_home": 0.5412,
+    "prob_draw": 0.2315,
+    "prob_away": 0.2273,
+    "predicted_score": {"home": 2, "away": 1},
+    "score_distribution": [[0.0521, 0.0683], "..."]
+  },
+  "xgboost": {
+    "model_version": "v202526_gw28_20260913_1400",
+    "computed_at": "2026-09-13T03:04:22Z",
+    "prob_home": 0.5284,
+    "prob_draw": 0.2411,
+    "prob_away": 0.2305,
+    "features": {
+      "elo_diff": 84.5,
+      "rolling_xg_diff": 0.42,
+      "rolling_sot_diff": 2.1
+    }
+  }
+}
+```
+
+This structure enables **per-model freshness validation**: the serving layer verifies whether `cached[model]["model_version"] == active_model.version` and `cached[model]["computed_at"] >= active_model.updated_at`. If one model rolls back or refits out-of-sync, only that specific model falls back to dynamic recomputation.
 
 ---
 
@@ -162,14 +193,14 @@ The weekly synchronization script (`scripts/sync_pipeline.py`) runs in an extern
      - *Trigger*: Attempt 1 fails to converge (`STOP: EXCEEDS LIMIT`), raises numerical error, or converges to a solution that violates Gate 2A bounds.
      - *Hypothesis*: The warm-start starting vector was trapped in an ill-conditioned local geometry, saddle point, or extreme parameter boundary.
      - *Initialization*: Completely discard the warm-start vector. Reset to the canonical symmetric flat prior ($\alpha_i = 1.0, \beta_i = 1.0, \gamma = 1.30, \rho = -0.05$).
-     - *Budget*: Doubled ceiling: `maxfun=100,000`, `maxiter=4,000`.
+     - *Budget*: Doubled ceiling: `maxfun=100,000`, `maxiter=4,000` (3.7x higher than the highest evaluation count seen in Phase 2B cross-validation: 26,936 at GW37).
 3. **Gate 2A (Parameter Bounds Verification)**:
    - Verify $\gamma \in [1.05, 1.55]$, $\rho \in [-0.25, 0.25]$, $\alpha_i, \beta_i \in [0.15, 4.0]$, and $\alpha_{\text{ref}} \equiv 1.0$.
 4. **Activation & Fixture Update**:
    - `UPDATE models SET is_active = FALSE WHERE model_name = 'dixon_coles';`
    - `INSERT INTO models (model_name, version, artifact_bytes, manifest, is_active) VALUES ('dixon_coles', ..., TRUE);`
-   - Generate Dixon-Coles fixture predictions for scheduled matches.
-   - Update `fixtures.precomputed_predictions = jsonb_set(coalesce(precomputed_predictions, '{}'), '{dixon_coles}', :dc_preds)`. `COMMIT`.
+   - Generate Dixon-Coles fixture predictions with `model_version` and `computed_at`.
+   - Update `fixtures.precomputed_predictions = jsonb_set(coalesce(precomputed_predictions, '{}'), '{dixon_coles}', :dc_payload)`. `COMMIT`.
    - *Failure behavior*: If both Attempt 1 and Attempt 2 fail Gate 2A, Phase B1 rolls back. The previously active Dixon-Coles model remains active in `models`. A critical alert is logged.
 
 ### 4.3 Phase B2: XGBoost Refit & Activation Transaction
@@ -180,8 +211,8 @@ The weekly synchronization script (`scripts/sync_pipeline.py`) runs in an extern
 4. **Activation & Fixture Update**:
    - `UPDATE models SET is_active = FALSE WHERE model_name = 'xgboost';`
    - `INSERT INTO models (model_name, version, artifact_bytes, manifest, is_active) VALUES ('xgboost', ..., TRUE);`
-   - Generate XGBoost fixture predictions for scheduled matches.
-   - Update `fixtures.precomputed_predictions = jsonb_set(coalesce(precomputed_predictions, '{}'), '{xgboost}', :xgb_preds)`. `COMMIT`.
+   - Generate XGBoost fixture predictions with `model_version` and `computed_at`.
+   - Update `fixtures.precomputed_predictions = jsonb_set(coalesce(precomputed_predictions, '{}'), '{xgboost}', :xgb_payload)`. `COMMIT`.
    - *Failure behavior*: If refit fails or produces invalid probabilities, Phase B2 rolls back. The previously active XGBoost model remains active.
 
 ### 4.4 Multi-Gameweek Cadence & Gate 2B Out-of-Sample Audit
@@ -208,10 +239,18 @@ When runs skip due to CSV delays, international breaks, or holiday fixture conge
     ```
 - Marks audited fixture records as `status = 'FINISHED'`.
 
-#### Dixon-Coles Warm-Start Across Multi-Gameweek Shifts
-- **Window Shift $\le 30$ matches ($\le 3$ GWs)**: 98.0%+ of the log-likelihood data remains unchanged. Time decay $\xi = 0.0019$ operates continuously across match dates ($e^{-0.0019 \times 14} \approx 0.974$), preserving the convex neighborhood. Attempt 1 warm-start proceeds as normal.
-- **Window Shift $> 40$ matches or Season Boundary**: If the active team roster changes (promoted/relegated teams appear) or an extended outage occurred, Attempt 1 automatically skips warm-start and routes directly to the flat prior.
-- **Fail-Safe**: If any multi-gameweek warm-start fails, Attempt 2 flat-prior reset provides an unconditional 100k-eval guarantee.
+#### Dixon-Coles Time Decay & Warm-Start Across Window Shifts
+- **Decay Rate Confirmation**: MatchSense uses fixed decay rate $\xi = 0.005$ per day, as established in Phase 1 and confirmed in `ml/models/dixon_coles.py` (`xi: float = 0.005`, half-life $\approx 138$ days). Note: the constant $0.0019$ in earlier drafts was an erroneous copy of the classic 1997 paper's 365-day parameter; the actual MatchSense hyperparameter remains $\xi = 0.005$ throughout.
+- **Mathematical Smoothness Across a 14-Day Shift**:
+  - Over 14 days (2 skipped gameweeks), the daily time-decay factor attenuates weights by $e^{-0.005 \times 14} = e^{-0.070} \approx 0.9324$ ($6.76\%$ reduction).
+  - In the 1,520-match rolling window, 1,500 matches ($98.68\%$) are identical between fits.
+  - Scaling 98.68% of the likelihood terms by a uniform factor of $\approx 0.9324$ does not alter the location of the log-likelihood gradient roots ($\nabla (c \cdot \ell) = c \nabla \ell = 0$).
+  - The only terms perturbing the optimum location are the 20 matches dropped from 4 years ago (whose weights were already attenuated to $e^{-0.005 \times 1460} \approx 0.00067$) and the 20 newly added matches.
+  - Consequently, the previous parameter vector $\theta_t$ remains well inside the local quadratic basin of $\theta_{t+1}$, providing an exceptionally strong warm start.
+- **Cadence Rules**:
+  - **Window Shift $\le 30$ matches ($\le 3$ GWs)**: Warm-start Attempt 1 proceeds as normal.
+  - **Window Shift $> 40$ matches or Season Boundary**: If active team roster changes (promoted clubs appear) or an extended multi-month outage occurs, Attempt 1 skips warm-start and initializes directly from the flat prior.
+  - **Fail-Safe**: If any multi-gameweek warm-start fails Gate 2A, Attempt 2 flat-prior reset provides an unconditional 100k-eval guarantee.
 
 ---
 
@@ -238,10 +277,24 @@ FastAPI uses an in-memory `ModelManager` to avoid DB latency on the hot path whi
 - **Hot-Path Performance (< 0.01ms)**: Requests use loaded in-memory model references directly.
 - **Timestamp Polling (30s TTL)**: On incoming requests, if `time.time() - last_checked > 30.0s`, execute:
   ```sql
-  SELECT model_name, updated_at FROM models WHERE is_active = TRUE;
+  SELECT model_name, version, updated_at FROM models WHERE is_active = TRUE;
   ```
   If `updated_at > model_loaded_at`, fetch `artifact_bytes`, decompress with `zlib`, deserialize, and atomically replace the model pointer.
 - **Independent Swapping**: Dixon-Coles and XGBoost are held in independent references (`_dc_model`, `_xgb_model`).
+- **Defense-in-Depth Per-Model Freshness Check**:
+  When serving `GET /api/v1/fixtures/upcoming`:
+  ```python
+  def resolve_prediction(fixture: Fixture, model_name: str, model: BasePredictor, meta: ModelMetadata) -> dict:
+      cached = (fixture.precomputed_predictions or {}).get(model_name)
+      if (
+          cached is not None
+          and cached.get("model_version") == meta.version
+          and cached.get("computed_at") >= meta.updated_at.isoformat()
+      ):
+          return cached
+      # Stale or missing for this specific model: recompute on the fly
+      return model.predict_fixture(fixture.home_team, fixture.away_team)
+  ```
 - **Offline Fallback**: If database connection is unavailable, `ModelManager` falls back to reading local `.pkl` files (`settings.model_path`, `settings.xgb_model_path`).
 
 ### 6.2 API Contracts
@@ -370,6 +423,7 @@ FastAPI uses an in-memory `ModelManager` to avoid DB latency on the hot path whi
   - Verify `POST /predictions/head-to-head` produces identical backward-compatible outputs for `?model=dixon_coles` and `?model=xgboost`.
   - Verify `POST /predictions/compare` nests both models correctly without consensus blending.
   - Verify `GET /fixtures/upcoming` returns scheduled matches with dual predictions.
+  - Verify `GET /fixtures/upcoming` per-model freshness fallback: when one model's cache has a mismatched `model_version`, that model dynamically recomputes while the healthy model serves from cache.
   - Verify `GET /teams/{team}/profile` returns Poisson strengths alongside Elo and rolling features.
 - `tests/unit/test_model_manager.py`:
   - Mock DB with newer timestamp triggers in-memory model replacement.
