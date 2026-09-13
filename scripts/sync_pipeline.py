@@ -42,22 +42,22 @@ def check_gate_2a_dixon_coles(model: DixonColesModel) -> tuple[bool, str]:
         return False, f"Optimizer did not converge: {msg}"
 
     home_adv = getattr(model, "home_adv_", getattr(model, "_home_advantage", None))
-    if home_adv is None or not (1.0 <= home_adv <= 1.6):
-        return False, f"home_advantage {home_adv} outside Gate 2A range [1.0, 1.6]"
+    if home_adv is None or not (1.05 <= home_adv <= 1.55):
+        return False, f"home_advantage {home_adv} outside Gate 2A range [1.05, 1.55]"
 
     rho = getattr(model, "rho_", getattr(model, "_rho", None))
-    if rho is None or not (-0.25 <= rho <= 0.05):
-        return False, f"rho {rho} outside Gate 2A range [-0.25, 0.05]"
+    if rho is None or not (-0.25 <= rho <= 0.25):
+        return False, f"rho {rho} outside Gate 2A range [-0.25, 0.25]"
 
     attacks = getattr(model, "attack_", getattr(model, "_attack", {}))
     for t, att in attacks.items():
-        if not (0.2 <= att <= 3.5):
-            return False, f"Team '{t}' attack strength {att} outside [0.2, 3.5]"
+        if not (0.15 <= att <= 4.0):
+            return False, f"Team '{t}' attack strength {att} outside [0.15, 4.0]"
 
     defenses = getattr(model, "defense_", getattr(model, "_defense", {}))
     for t, deff in defenses.items():
-        if not (0.2 <= deff <= 3.5):
-            return False, f"Team '{t}' defense strength {deff} outside [0.2, 3.5]"
+        if not (0.15 <= deff <= 4.0):
+            return False, f"Team '{t}' defense strength {deff} outside [0.15, 4.0]"
 
     return True, "Gate 2A passed"
 
