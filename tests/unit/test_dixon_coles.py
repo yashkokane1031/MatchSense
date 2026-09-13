@@ -207,3 +207,85 @@ class TestMediumScaleConvergence:
         for team, s in model.get_team_strengths().items():
             assert 0 < s["attack"] < 10, f"{team} attack out of range: {s['attack']}"
             assert 0 < s["defense"] < 10, f"{team} defense out of range: {s['defense']}"
+
+
+class TestTwoPassSmallSampleRegularization:
+    """Test two-pass joint optimization with parameter exclusion for small-sample boundary collapse."""
+
+    @pytest.fixture
+    def base_matches(self) -> pd.DataFrame:
+        """Create a stable base dataset of 6 teams with 15 matches each."""
+        rng = np.random.default_rng(123)
+        teams = ["Arsenal", "Chelsea", "Liverpool", "ManCity", "Tottenham", "Newcastle"]
+        rows = []
+        for i in range(90):
+            ht = rng.choice(teams)
+            at = rng.choice([t for t in teams if t != ht])
+            hg = rng.integers(1, 4)
+            ag = rng.integers(0, 3)
+            rows.append({
+                "Date": pd.Timestamp("2024-01-01") + pd.Timedelta(days=i),
+                "HomeTeam": ht,
+                "AwayTeam": at,
+                "FTHG": int(hg),
+                "FTAG": int(ag),
+                "FTR": "H" if hg > ag else ("D" if hg == ag else "A"),
+                "Season": "2024-25",
+            })
+        return pd.DataFrame(rows)
+
+    def test_two_pass_triggered_on_boundary_collapse(self, base_matches):
+        """When a team with <5 matches scores 0 goals, Pass 2 is triggered with parameter exclusion."""
+        # Add Coventry with 2 matches and 0 goals scored
+        coventry_matches = pd.DataFrame([
+            {"Date": pd.Timestamp("2024-04-01"), "HomeTeam": "Arsenal", "AwayTeam": "Coventry", "FTHG": 2, "FTAG": 0, "FTR": "H", "Season": "2024-25"},
+            {"Date": pd.Timestamp("2024-04-05"), "HomeTeam": "Coventry", "AwayTeam": "Chelsea", "FTHG": 0, "FTAG": 1, "FTR": "A", "Season": "2024-25"},
+        ])
+        full_df = pd.concat([base_matches, coventry_matches], ignore_index=True).sort_values("Date")
+
+        model = DixonColesModel(xi=0.005)
+        model.fit(full_df)
+
+        assert model._pass2_triggered is True
+        assert "Coventry" in model._pass2_pinned["attack"]
+        pinned_prior = model._pass2_pinned["attack"]["Coventry"]
+        assert model._attack["Coventry"] == pytest.approx(pinned_prior)
+        assert model._has_boundary_collapse is False
+
+        # Verify predictions work and sum to 1
+        probs = model.predict_proba("Coventry", "Arsenal")
+        assert sum(probs.values()) == pytest.approx(1.0)
+
+    def test_multi_team_simultaneous_collapse_on_same_side(self, base_matches):
+        """Multiple small-sample teams collapsing on the same side (attack) are all pinned simultaneously in Pass 2."""
+        new_matches = pd.DataFrame([
+            {"Date": pd.Timestamp("2024-04-01"), "HomeTeam": "Arsenal", "AwayTeam": "Promoted_A", "FTHG": 3, "FTAG": 0, "FTR": "H", "Season": "2024-25"},
+            {"Date": pd.Timestamp("2024-04-02"), "HomeTeam": "Promoted_A", "AwayTeam": "Chelsea", "FTHG": 0, "FTAG": 2, "FTR": "A", "Season": "2024-25"},
+            {"Date": pd.Timestamp("2024-04-03"), "HomeTeam": "Liverpool", "AwayTeam": "Promoted_B", "FTHG": 1, "FTAG": 0, "FTR": "H", "Season": "2024-25"},
+            {"Date": pd.Timestamp("2024-04-04"), "HomeTeam": "Promoted_B", "AwayTeam": "ManCity", "FTHG": 0, "FTAG": 4, "FTR": "A", "Season": "2024-25"},
+        ])
+        full_df = pd.concat([base_matches, new_matches], ignore_index=True).sort_values("Date")
+
+        model = DixonColesModel(xi=0.005)
+        model.fit(full_df)
+
+        assert model._pass2_triggered is True
+        assert "Promoted_A" in model._pass2_pinned["attack"]
+        assert "Promoted_B" in model._pass2_pinned["attack"]
+        assert model._attack["Promoted_A"] == pytest.approx(model._pass2_pinned["attack"]["Promoted_A"])
+        assert model._attack["Promoted_B"] == pytest.approx(model._pass2_pinned["attack"]["Promoted_B"])
+
+        # Model converged and produces valid probabilities
+        assert model._converged is True
+        probs_a = model.predict_proba("Promoted_A", "Promoted_B")
+        assert sum(probs_a.values()) == pytest.approx(1.0)
+
+    def test_no_pass2_when_no_collapse(self, base_matches):
+        """Pass 2 is not triggered when all teams have normal scoring or sufficient sample size."""
+        model = DixonColesModel(xi=0.005)
+        model.fit(base_matches)
+
+        assert model._pass2_triggered is False
+        assert len(model._pass2_pinned) == 0
+        assert model._has_boundary_collapse is False
+

@@ -13,6 +13,7 @@ from sqlalchemy.pool import StaticPool
 from backend.core.database import Base
 from backend.models.schemas import Fixture, Match, ModelArtifact
 from scripts.sync_pipeline import (
+    main,
     run_phase_a_ingestion,
     run_phase_b1_dixon_coles,
     run_phase_b2_xgboost,
@@ -285,5 +286,73 @@ def test_phase_a_api_down_falls_back_to_date(test_db):
         spy.assert_called_once()
         call_kwargs = spy.call_args
         assert call_kwargs[1].get("api_season") is None or call_kwargs[0][0] is None
+
+
+def test_main_end_to_end_pipeline_wiring(test_db):
+    """End-to-end integration test invoking main() against a real DB session.
+
+    Mocks only the external HTTP boundaries (Football-Data CSV download and API client)
+    while executing the full ingestion, model training, artifact persistence, and
+    partial-merge prediction flow end-to-end.
+    """
+    engine, session = test_db
+    TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+    sample_csv = (
+        "Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,HTHG,HTAG,HS,AS,HST,AST,AvgH,AvgD,AvgA\n"
+        "17/08/2026,Arsenal,Chelsea,2,1,H,1,0,12,8,5,3,1.80,3.60,4.20\n"
+        "18/08/2026,Liverpool,Everton,3,0,H,2,0,15,4,7,1,1.45,4.50,7.00\n"
+    )
+    mock_fixtures = [
+        {
+            "id": 8801,
+            "season": "2026-27",
+            "gameweek": 2,
+            "kickoff_time": "2026-08-24T14:00:00Z",
+            "home_team": "Chelsea",
+            "away_team": "Arsenal",
+            "status": "SCHEDULED",
+        }
+    ]
+
+    with patch("scripts.sync_pipeline.SessionLocal", TestSessionLocal), \
+         patch("scripts.sync_pipeline.download_season_csv", return_value=sample_csv), \
+         patch("scripts.sync_pipeline.FootballDataClient") as MockClient:
+        instance = MockClient.return_value
+        instance.get_scheduled_fixtures.return_value = mock_fixtures
+
+        # Execute main() end-to-end!
+        main()
+
+        # 1. Verify Phase A ingested matches and fixture into test DB
+        matches_in_db = session.query(Match).all()
+        assert len(matches_in_db) == 2
+
+        fixtures_in_db = session.query(Fixture).all()
+        assert len(fixtures_in_db) == 1
+        fix = fixtures_in_db[0]
+        assert fix.id == 8801
+        assert fix.home_team == "Chelsea"
+        assert fix.away_team == "Arsenal"
+
+        # 2. Verify Phase B1 activated Dixon-Coles model in DB
+        active_dc = session.query(ModelArtifact).filter_by(model_name="dixon_coles", is_active=True).all()
+        assert len(active_dc) == 1
+        assert active_dc[0].manifest["model_name"] == "dixon_coles"
+        assert active_dc[0].manifest["n_matches"] > 0
+
+        # 3. Verify Phase B2 activated XGBoost model in DB
+        active_xgb = session.query(ModelArtifact).filter_by(model_name="xgboost", is_active=True).all()
+        assert len(active_xgb) == 1
+        assert active_xgb[0].manifest["model_name"] == "xgboost"
+        assert active_xgb[0].manifest["n_matches"] > 0
+
+        # 4. Verify JSONB partial-merge wrote BOTH models' predictions into fixture
+        session.refresh(fix)
+        assert "dixon_coles" in fix.precomputed_predictions
+        assert "xgboost" in fix.precomputed_predictions
+        assert 0.0 < fix.precomputed_predictions["dixon_coles"]["prob_home"] < 1.0
+        assert 0.0 < fix.precomputed_predictions["xgboost"]["prob_home"] < 1.0
+
 
 

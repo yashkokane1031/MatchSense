@@ -225,3 +225,20 @@ class XGBoostPredictor(BasePredictor):
             p_h, p_d, p_a = 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0
 
         return {"prob_home": p_h, "prob_draw": p_d, "prob_away": p_a}
+
+    @property
+    def model_name(self) -> str:
+        return "xgboost"
+
+    def get_model_info(self) -> dict[str, Any]:
+        """Return metadata about the fitted XGBoost model."""
+        return {
+            "model_name": self.model_name,
+            "n_matches": len(self._fitted_matches) if self._fitted_matches is not None else 0,
+            "n_features": len(self._feature_names),
+            "n_teams": len(self._final_elo),
+            "last_date": str(self._last_date.date()) if self._last_date is not None else None,
+            "last_season": self._last_season,
+            "is_fitted": self.booster is not None,
+        }
+
