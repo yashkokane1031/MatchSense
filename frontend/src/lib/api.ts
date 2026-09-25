@@ -6,8 +6,9 @@ import type {
   HealthStatusType,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const API_V1 = `${API_BASE_URL}/api/v1`;
+const rawBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const sanitizedBase = rawBase.replace(/\/+$/, "");
+const API_V1 = sanitizedBase.endsWith("/api/v1") ? sanitizedBase : `${sanitizedBase}/api/v1`;
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: unknown) {
