@@ -5,6 +5,10 @@ import { Navbar } from "@/components/common/Navbar";
 export const metadata: Metadata = {
   title: "MatchSense | Premier League Predictive Intelligence",
   description: "Independent Dixon-Coles Poisson vs. CatBoost/XGBoost dual-model Premier League predictive intelligence dashboard.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
