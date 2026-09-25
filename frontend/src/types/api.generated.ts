@@ -423,7 +423,9 @@ export interface operations {
     };
     list_upcoming_fixtures_api_v1_fixtures_upcoming_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -437,6 +439,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FixtureCard"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

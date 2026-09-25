@@ -133,17 +133,41 @@
         "summary": "List Upcoming Fixtures",
         "description": "Return scheduled upcoming fixtures with dual-model predictions.",
         "operationId": "list_upcoming_fixtures_api_v1_fixtures_upcoming_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/FixtureCard"
                   },
-                  "type": "array",
                   "title": "Response List Upcoming Fixtures Api V1 Fixtures Upcoming Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
