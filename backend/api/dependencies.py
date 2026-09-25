@@ -42,7 +42,7 @@ def set_model(model: BasePredictor | None, name: str | None = None) -> None:
             model_manager._metadata.clear()
         return
 
-    model_name = name or getattr(model, "name", "dixon_coles")
+    model_name: str = name if name is not None else str(getattr(model, "name", "dixon_coles"))
     model_manager.set_model(
         model_name,
         model,

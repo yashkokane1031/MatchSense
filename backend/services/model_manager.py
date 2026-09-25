@@ -57,7 +57,7 @@ class ModelManager:
         for name in ["dixon_coles", "xgboost"]:
             if name in self._models:
                 meta = self._metadata[name]
-                info = getattr(self._models[name], "get_model_info", lambda: {})()
+                info: dict[str, Any] = getattr(self._models[name], "get_model_info", lambda: {})()
                 result[name] = {
                     "loaded": True,
                     "version": meta.version,

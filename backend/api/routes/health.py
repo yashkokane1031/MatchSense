@@ -96,6 +96,7 @@ def health_check() -> HealthResponse:
             fixtures_count=fixtures_count,
             fixture_feed=fixture_feed,
             models=models_dict,
+            message=None,
             **model_info,
         )
     except RuntimeError:
