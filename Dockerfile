@@ -14,9 +14,11 @@ RUN uv sync --frozen --no-dev --no-install-project
 # Copy application code
 COPY backend/ backend/
 COPY ml/ ml/
-COPY data/ data/
 COPY alembic/ alembic/
 COPY alembic.ini ./
+
+# Ensure data directories exist for runtime models and cache
+RUN mkdir -p data/models data/raw data/processed
 
 # Sync project
 RUN uv sync --frozen --no-dev
