@@ -12,7 +12,7 @@
           "Health"
         ],
         "summary": "Health Check",
-        "description": "Return API health status, database connection, and model metadata.",
+        "description": "Return API health status, database connection, fixture feed health, and model metadata.",
         "operationId": "health_check_api_v1_health_get",
         "responses": {
           "200": {
@@ -336,6 +336,40 @@
         ],
         "title": "FixtureCard"
       },
+      "FixtureFeedStatus": {
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "upcoming_count": {
+            "type": "integer",
+            "title": "Upcoming Count",
+            "default": 0
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "status"
+        ],
+        "title": "FixtureFeedStatus"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -381,6 +415,21 @@
           "database_connected": {
             "type": "boolean",
             "title": "Database Connected"
+          },
+          "fixtures_count": {
+            "type": "integer",
+            "title": "Fixtures Count",
+            "default": 0
+          },
+          "fixture_feed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FixtureFeedStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "models": {
             "additionalProperties": {

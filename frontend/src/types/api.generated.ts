@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Health Check
-         * @description Return API health status, database connection, and model metadata.
+         * @description Return API health status, database connection, fixture feed health, and model metadata.
          */
         get: operations["health_check_api_v1_health_get"];
         put?: never;
@@ -176,6 +176,20 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** FixtureFeedStatus */
+        FixtureFeedStatus: {
+            /** Configured */
+            configured: boolean;
+            /**
+             * Upcoming Count
+             * @default 0
+             */
+            upcoming_count: number;
+            /** Status */
+            status: string;
+            /** Error */
+            error?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -199,6 +213,12 @@ export interface components {
             model_loaded: boolean;
             /** Database Connected */
             database_connected: boolean;
+            /**
+             * Fixtures Count
+             * @default 0
+             */
+            fixtures_count: number;
+            fixture_feed?: components["schemas"]["FixtureFeedStatus"] | null;
             /** Models */
             models: {
                 [key: string]: components["schemas"]["ModelStatus"];

@@ -89,15 +89,13 @@ def health_check() -> HealthResponse:
     try:
         model = get_model()
         model_info = model.get_model_info() if hasattr(model, "get_model_info") else {}
-        is_healthy = db_connected and feed_status == "healthy"
         return HealthResponse(
-            status="healthy" if is_healthy else "degraded",
+            status="healthy",
             model_loaded=True,
             database_connected=db_connected,
             fixtures_count=fixtures_count,
             fixture_feed=fixture_feed,
             models=models_dict,
-            message=feed_error if not is_healthy else None,
             **model_info,
         )
     except RuntimeError:

@@ -9,6 +9,7 @@ export function useHealthStatus() {
     derivedStatus: "healthy",
     model_loaded: true,
     database_connected: true,
+    fixtures_count: 0,
     models: {},
   });
   const lastFetchRef = useRef<number>(0);

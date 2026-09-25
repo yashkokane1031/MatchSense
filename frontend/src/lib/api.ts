@@ -64,6 +64,7 @@ export const api = {
           derivedStatus: "degraded",
           model_loaded: false,
           database_connected: false,
+          fixtures_count: 0,
           models: {},
           message: `API returned HTTP ${res.status}`,
         };
@@ -79,6 +80,7 @@ export const api = {
         derivedStatus: "offline",
         model_loaded: false,
         database_connected: false,
+        fixtures_count: 0,
         models: {},
         message: "API server unreachable",
       };
