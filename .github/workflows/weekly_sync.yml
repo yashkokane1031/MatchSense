@@ -18,14 +18,15 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install uv & dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
 
-      - name: Run weekly synchronization pipeline
+      - name: Run migrations & weekly synchronization pipeline
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
         run: |
-          python scripts/sync_pipeline.py
+          uv run alembic upgrade head
+          uv run python scripts/sync_pipeline.py

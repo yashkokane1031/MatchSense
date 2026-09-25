@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: matchsense-api
+    runtime: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: FOOTBALL_DATA_API_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO
