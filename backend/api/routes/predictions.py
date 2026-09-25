@@ -110,11 +110,20 @@ def compare_predictions(request: HeadToHeadRequest) -> ComparePredictionResponse
 
 
 @router.get("/fixtures/upcoming", response_model=list[FixtureCard])
-def list_upcoming_fixtures(db: Session = Depends(get_db)) -> list[FixtureCard]:
+def list_upcoming_fixtures(
+    limit: int = Query(default=10, ge=1, le=50),
+    db: Session = Depends(get_db),
+) -> list[FixtureCard]:
     """Return scheduled upcoming fixtures with dual-model predictions."""
     fixtures = []
     try:
-        fixtures = db.query(Fixture).filter(Fixture.status.in_(["SCHEDULED", "TIMED"])).order_by(Fixture.kickoff_time.asc()).all()
+        fixtures = (
+            db.query(Fixture)
+            .filter(Fixture.status.in_(["SCHEDULED", "TIMED"]))
+            .order_by(Fixture.kickoff_time.asc())
+            .limit(limit)
+            .all()
+        )
     except Exception:
         fixtures = []
 

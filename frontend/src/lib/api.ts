@@ -10,6 +10,16 @@ const rawBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const sanitizedBase = rawBase.replace(/\/+$/, "");
 const API_V1 = sanitizedBase.endsWith("/api/v1") ? sanitizedBase : `${sanitizedBase}/api/v1`;
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 6000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: unknown) {
     super(message);
@@ -22,20 +32,20 @@ export interface ClientHealthStatus extends HealthResponse {
 }
 
 export const api = {
-  async getUpcomingFixtures(): Promise<FixtureCard[]> {
-    const res = await fetch(`${API_V1}/fixtures/upcoming`, { next: { revalidate: 60 } });
+  async getUpcomingFixtures(limit = 10): Promise<FixtureCard[]> {
+    const res = await fetchWithTimeout(`${API_V1}/fixtures/upcoming?limit=${limit}`, { next: { revalidate: 60 } });
     if (!res.ok) throw new ApiError(res.status, "Failed to load upcoming fixtures");
     return res.json();
   },
 
   async getTeams(): Promise<string[]> {
-    const res = await fetch(`${API_V1}/teams`, { next: { revalidate: 3600 } });
+    const res = await fetchWithTimeout(`${API_V1}/teams`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new ApiError(res.status, "Failed to load teams");
     return res.json();
   },
 
   async getTeamProfile(teamName: string): Promise<TeamProfileResponse> {
-    const res = await fetch(`${API_V1}/teams/${encodeURIComponent(teamName)}/profile`, {
+    const res = await fetchWithTimeout(`${API_V1}/teams/${encodeURIComponent(teamName)}/profile`, {
       next: { revalidate: 300 },
     });
     if (!res.ok) throw new ApiError(res.status, `Failed to load profile for ${teamName}`);

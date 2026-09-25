@@ -140,20 +140,13 @@ class PredictionService:
         }
 
     def resolve_fixture_prediction(self, fixture: Fixture, model_name: str) -> dict[str, Any]:
-        """Resolve fixture prediction from cache if fresh, otherwise recompute dynamically."""
+        """Resolve fixture prediction from cache if available, otherwise recompute dynamically."""
         cached = (fixture.precomputed_predictions or {}).get(model_name)
-        meta = model_manager.get_metadata(model_name)
-
-        if (
-            cached is not None
-            and meta is not None
-            and cached.get("model_version") == meta.version
-            and cached.get("computed_at") is not None
-            and cached.get("computed_at") >= meta.updated_at.isoformat()
-        ):
+        if cached is not None and "prob_home" in cached:
             return cached
 
-        # Stale or missing: on-the-fly recompute
+        # Missing or uncached: on-the-fly recompute
+        meta = model_manager.get_metadata(model_name)
         model = self.get_active_model(model_name)
         proba = model.predict_proba(fixture.home_team, fixture.away_team)
         pred = {
