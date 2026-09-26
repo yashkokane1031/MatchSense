@@ -1,6 +1,6 @@
 "use client";
 
-import { PREMIER_LEAGUE_TEAMS } from "@/lib/constants";
+import { PREMIER_LEAGUE_TEAMS, resolveTeamName } from "@/lib/constants";
 
 interface TeamSelectorProps {
   homeTeam: string;
@@ -18,6 +18,8 @@ export function TeamSelector({
   onSwap,
 }: TeamSelectorProps) {
   const teams = Object.keys(PREMIER_LEAGUE_TEAMS).sort();
+  const normalizedHome = resolveTeamName(homeTeam) || homeTeam;
+  const normalizedAway = resolveTeamName(awayTeam) || awayTeam;
 
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4 mb-8 bg-[#111622]/90 p-5 rounded-2xl border border-white/10">
@@ -26,12 +28,12 @@ export function TeamSelector({
           Home Club
         </label>
         <select
-          value={homeTeam}
+          value={normalizedHome}
           onChange={(e) => onSelectHome(e.target.value)}
           className="w-full bg-[#0a0d14] text-white border border-white/15 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-pointer"
         >
           {teams.map((t) => (
-            <option key={t} value={t} disabled={t === awayTeam}>
+            <option key={t} value={t} disabled={t === normalizedAway}>
               {t}
             </option>
           ))}
@@ -52,12 +54,12 @@ export function TeamSelector({
           Away Club
         </label>
         <select
-          value={awayTeam}
+          value={normalizedAway}
           onChange={(e) => onSelectAway(e.target.value)}
           className="w-full bg-[#0a0d14] text-white border border-white/15 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-pointer"
         >
           {teams.map((t) => (
-            <option key={t} value={t} disabled={t === homeTeam}>
+            <option key={t} value={t} disabled={t === normalizedHome}>
               {t}
             </option>
           ))}

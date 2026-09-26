@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { resolveTeamName } from "@/lib/constants";
 import { TeamSelector } from "@/components/simulator/TeamSelector";
 import { ModelComparisonBlock } from "@/components/simulator/ModelComparisonBlock";
 import type { ComparePredictionResponse } from "@/types";
@@ -11,16 +12,34 @@ function SimulatorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [homeTeam, setHomeTeam] = useState<string>(
-    searchParams.get("home") || "Arsenal"
-  );
-  const [awayTeam, setAwayTeam] = useState<string>(
-    searchParams.get("away") || "Chelsea"
-  );
+  const rawHome = searchParams.get("home");
+  const rawAway = searchParams.get("away");
+
+  const [homeTeam, setHomeTeam] = useState<string>(() => {
+    return resolveTeamName(rawHome) || "Arsenal";
+  });
+  const [awayTeam, setAwayTeam] = useState<string>(() => {
+    return resolveTeamName(rawAway) || "Chelsea";
+  });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ComparePredictionResponse | null>(null);
   const cacheRef = useRef<Map<string, ComparePredictionResponse>>(new Map());
+
+  useEffect(() => {
+    if (rawHome) {
+      const resolved = resolveTeamName(rawHome);
+      if (resolved && resolved !== homeTeam) {
+        setHomeTeam(resolved);
+      }
+    }
+    if (rawAway) {
+      const resolved = resolveTeamName(rawAway);
+      if (resolved && resolved !== awayTeam) {
+        setAwayTeam(resolved);
+      }
+    }
+  }, [rawHome, rawAway]);
 
   const runSimulation = useCallback(async (h: string, a: string) => {
     if (!h || !a || h === a) return;

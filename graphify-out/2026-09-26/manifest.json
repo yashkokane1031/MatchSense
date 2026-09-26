@@ -642,21 +642,21 @@
     "semantic_hash": ""
   },
   "frontend/src/app/simulator/page.tsx": {
-    "mtime": 1790408176.6254368,
-    "seen": 1790408641.235425,
-    "ast_hash": "01b9b31803263c69792295d0b7031d0b",
+    "mtime": 1789309722.6292982,
+    "seen": 1790351988.404707,
+    "ast_hash": "52205931ad28111de4692481d5537f01",
     "semantic_hash": ""
   },
   "frontend/src/app/teams/[team]/page.tsx": {
-    "mtime": 1790408230.3675668,
-    "seen": 1790408641.2354276,
-    "ast_hash": "2a2da6e51fb7c7955d7e7abc44f6e52e",
+    "mtime": 1789309722.6323493,
+    "seen": 1790351988.4047086,
+    "ast_hash": "ff04feaf4fed869c594f94b586c11b08",
     "semantic_hash": ""
   },
   "frontend/src/app/teams/page.tsx": {
-    "mtime": 1790408209.6634672,
-    "seen": 1790408641.2354293,
-    "ast_hash": "4f299f53f714a2dd7af4a0d6b772178e",
+    "mtime": 1789309722.63435,
+    "seen": 1790351988.40471,
+    "ast_hash": "df8f252667c458afb00258e963626845",
     "semantic_hash": ""
   },
   "frontend/src/components/common/HealthBadge.tsx": {
@@ -684,9 +684,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/fixtures/FixtureFilter.tsx": {
-    "mtime": 1790408252.5679066,
-    "seen": 1790408641.2354386,
-    "ast_hash": "d20d58f48840e2fe0e7d47e734731bba",
+    "mtime": 1789309722.6383462,
+    "seen": 1790351988.4047182,
+    "ast_hash": "db748798dce3cc11d2dac01ab86bf73a",
     "semantic_hash": ""
   },
   "frontend/src/components/fixtures/FixtureGrid.tsx": {
@@ -726,9 +726,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/simulator/TeamSelector.tsx": {
-    "mtime": 1790408297.119987,
-    "seen": 1790408641.2354512,
-    "ast_hash": "332ba65776b8811abab8b0d95b074df8",
+    "mtime": 1789309722.641613,
+    "seen": 1790351988.4047284,
+    "ast_hash": "bb594044f2a1cf58cb19897370a66f31",
     "semantic_hash": ""
   },
   "frontend/src/components/teams/LeagueStrengthScatter.tsx": {
@@ -756,9 +756,9 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/constants.ts": {
-    "mtime": 1790408164.7521875,
-    "seen": 1790408641.23546,
-    "ast_hash": "c902b00e59c927ad95c1f0b068fa24fa",
+    "mtime": 1789309722.6461625,
+    "seen": 1790351988.4047358,
+    "ast_hash": "ef5efbcf48f50e2bfa4c516154568958",
     "semantic_hash": ""
   },
   "frontend/src/lib/utils.ts": {
@@ -951,12 +951,6 @@
     "mtime": 1790355319.2489936,
     "seen": 1790355321.5693836,
     "ast_hash": "90c9bccb3d8e841946328ab89515687b",
-    "semantic_hash": ""
-  },
-  "frontend/tests/unit/LeedsSimulation.test.tsx": {
-    "mtime": 1790408332.7459488,
-    "seen": 1790408641.235477,
-    "ast_hash": "6154c1570af55fa5fe9cef2d8aed6722",
     "semantic_hash": ""
   }
 }

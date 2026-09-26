@@ -43,7 +43,7 @@ export function FixtureFilter({
           onChange={(e) => onSelectTeam(e.target.value)}
           className="bg-[#111622] border border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 cursor-pointer"
         >
-          <option value="ALL">All 20 Premier League Clubs</option>
+          <option value="ALL">All Premier League Clubs</option>
           {teamList.map((team) => (
             <option key={team} value={team}>
               {team}

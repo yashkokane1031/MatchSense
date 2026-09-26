@@ -1,20 +1,21 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { LeagueStrengthScatter } from "@/components/teams/LeagueStrengthScatter";
-import { PREMIER_LEAGUE_TEAMS } from "@/lib/constants";
+import { PREMIER_LEAGUE_TEAMS, resolveTeamName } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeamsDirectoryPage() {
   let teams: string[] = [];
   try {
-    teams = await api.getTeams();
+    const raw = await api.getTeams();
+    teams = Array.from(new Set(raw.map((t) => resolveTeamName(t) || t))).sort();
   } catch {
-    teams = Object.keys(PREMIER_LEAGUE_TEAMS);
+    teams = Object.keys(PREMIER_LEAGUE_TEAMS).sort();
   }
 
   if (teams.length === 0) {
-    teams = Object.keys(PREMIER_LEAGUE_TEAMS);
+    teams = Object.keys(PREMIER_LEAGUE_TEAMS).sort();
   }
 
   // Generate strength coordinates for scatter plot
@@ -61,7 +62,7 @@ export default async function TeamsDirectoryPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-white text-sm group-hover:text-cyan-300 transition-colors truncate">
-                    {t}
+                    {meta?.name || t}
                   </span>
                   <span className="text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
                     →

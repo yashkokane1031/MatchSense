@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { PREMIER_LEAGUE_TEAMS } from "@/lib/constants";
+import { PREMIER_LEAGUE_TEAMS, resolveTeamName } from "@/lib/constants";
 import type { TeamProfileResponse } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -12,13 +12,15 @@ export default async function TeamProfilePage({
 }) {
   const { team } = await params;
   const decoded = decodeURIComponent(team);
-  const meta = PREMIER_LEAGUE_TEAMS[decoded];
+  const resolved = resolveTeamName(decoded) || decoded;
+  const meta = PREMIER_LEAGUE_TEAMS[resolved];
+  const displayName = meta?.name || resolved;
 
   let profile: TeamProfileResponse | null = null;
   let isDegraded = false;
 
   try {
-    profile = await api.getTeamProfile(decoded);
+    profile = await api.getTeamProfile(resolved);
   } catch {
     isDegraded = true;
   }
@@ -43,7 +45,7 @@ export default async function TeamProfilePage({
               style={{ backgroundColor: meta?.primaryColor || "#0ea5e9" }}
             />
             <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              {decoded}
+              {displayName}
             </h1>
             {meta?.shortName && (
               <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-800 text-slate-300">
@@ -54,7 +56,7 @@ export default async function TeamProfilePage({
         </div>
 
         <Link
-          href={`/simulator?home=${encodeURIComponent(decoded)}&away=Chelsea`}
+          href={`/simulator?home=${encodeURIComponent(displayName)}&away=Chelsea`}
           className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold hover:bg-cyan-500/30 transition-colors self-start sm:self-auto"
         >
           Simulate in H2H →
