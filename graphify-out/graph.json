@@ -7658,7 +7658,7 @@
       "node_kind": "heading",
       "norm_label": "1. clone & install dependencies",
       "source_file": "README.md",
-      "source_location": "L250"
+      "source_location": "L251"
     },
     {
       "id": "readme_1_dixon_coles_bivariate_poisson_process",
@@ -7682,7 +7682,7 @@
       "node_kind": "heading",
       "norm_label": "2. environment setup",
       "source_file": "README.md",
-      "source_location": "L263"
+      "source_location": "L264"
     },
     {
       "id": "readme_2_regularized_xgboost_tree_ensemble",
@@ -7694,7 +7694,7 @@
       "node_kind": "heading",
       "norm_label": "2. regularized xgboost tree ensemble",
       "source_file": "README.md",
-      "source_location": "L122"
+      "source_location": "L123"
     },
     {
       "id": "readme_3_start_database_run_migrations",
@@ -7706,7 +7706,7 @@
       "node_kind": "heading",
       "norm_label": "3. start database & run migrations",
       "source_file": "README.md",
-      "source_location": "L275"
+      "source_location": "L276"
     },
     {
       "id": "readme_4_run_data_ingestion_model_fitting",
@@ -7718,7 +7718,7 @@
       "node_kind": "heading",
       "norm_label": "4. run data ingestion & model fitting",
       "source_file": "README.md",
-      "source_location": "L285"
+      "source_location": "L286"
     },
     {
       "id": "readme_5_launch_application_services",
@@ -7730,7 +7730,7 @@
       "node_kind": "heading",
       "norm_label": "5. launch application services",
       "source_file": "README.md",
-      "source_location": "L292"
+      "source_location": "L293"
     },
     {
       "id": "readme_comprehensive_test_suite",
@@ -7742,7 +7742,7 @@
       "node_kind": "heading",
       "norm_label": "\ud83e\uddea comprehensive test suite",
       "source_file": "README.md",
-      "source_location": "L312"
+      "source_location": "L313"
     },
     {
       "id": "readme_core_engineering_principles",
@@ -7766,7 +7766,7 @@
       "node_kind": "heading",
       "norm_label": "\ud83d\ude80 getting started",
       "source_file": "README.md",
-      "source_location": "L242"
+      "source_location": "L243"
     },
     {
       "id": "readme_interactive_dashboard_simulator",
@@ -7778,7 +7778,7 @@
       "node_kind": "heading",
       "norm_label": "\ud83d\udcbb interactive dashboard & simulator",
       "source_file": "README.md",
-      "source_location": "L171"
+      "source_location": "L172"
     },
     {
       "id": "readme_license",
@@ -7790,7 +7790,7 @@
       "node_kind": "heading",
       "norm_label": "\ud83d\udcc4 license",
       "source_file": "README.md",
-      "source_location": "L335"
+      "source_location": "L336"
     },
     {
       "id": "readme_live_synchronization_pipeline_sync_pipeline_py",
@@ -7802,7 +7802,7 @@
       "node_kind": "heading",
       "norm_label": "\u26a1 live synchronization pipeline (`sync_pipeline.py`)",
       "source_file": "README.md",
-      "source_location": "L148"
+      "source_location": "L149"
     },
     {
       "id": "readme_matchsense",
@@ -7838,7 +7838,7 @@
       "node_kind": "heading",
       "norm_label": "\ud83d\udee1\ufe0f operational safeguards & gatekeeper architecture",
       "source_file": "README.md",
-      "source_location": "L137"
+      "source_location": "L138"
     },
     {
       "id": "readme_overview",
@@ -7862,7 +7862,7 @@
       "node_kind": "heading",
       "norm_label": "prerequisites",
       "source_file": "README.md",
-      "source_location": "L244"
+      "source_location": "L245"
     },
     {
       "id": "readme_repository_layout",
@@ -7874,7 +7874,7 @@
       "node_kind": "heading",
       "norm_label": "\ud83d\udcc1 repository layout",
       "source_file": "README.md",
-      "source_location": "L188"
+      "source_location": "L189"
     },
     {
       "id": "readme_system_architecture",
@@ -7898,17 +7898,17 @@
       "node_kind": "heading",
       "norm_label": "test coverage highlights",
       "source_file": "README.md",
-      "source_location": "L327"
+      "source_location": "L328"
     },
     {
-      "id": "readme_two_pass_small_sample_shrinkage_regularization",
-      "label": "Two-Pass Small-Sample Shrinkage Regularization",
+      "id": "readme_two_pass_small_sample_parameter_regularization",
+      "label": "Two-Pass Small-Sample Parameter Regularization",
       "_origin": "ast",
       "community": 30,
       "community_name": "MatchSense \u26bd",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "two-pass small-sample shrinkage regularization",
+      "norm_label": "two-pass small-sample parameter regularization",
       "source_file": "README.md",
       "source_location": "L112"
     },
@@ -34365,7 +34365,7 @@
     },
     {
       "source": "readme_1_dixon_coles_bivariate_poisson_process",
-      "target": "readme_two_pass_small_sample_shrinkage_regularization",
+      "target": "readme_two_pass_small_sample_parameter_regularization",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -34382,7 +34382,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L327",
+      "source_location": "L328",
       "weight": 1.0
     },
     {
@@ -34393,7 +34393,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L244",
+      "source_location": "L245",
       "weight": 1.0
     },
     {
@@ -34404,7 +34404,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L250",
+      "source_location": "L251",
       "weight": 1.0
     },
     {
@@ -34415,7 +34415,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L263",
+      "source_location": "L264",
       "weight": 1.0
     },
     {
@@ -34426,7 +34426,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L275",
+      "source_location": "L276",
       "weight": 1.0
     },
     {
@@ -34437,7 +34437,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L285",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -34448,7 +34448,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L292",
+      "source_location": "L293",
       "weight": 1.0
     },
     {
@@ -34459,7 +34459,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L137",
+      "source_location": "L138",
       "weight": 1.0
     },
     {
@@ -34470,7 +34470,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L148",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -34481,7 +34481,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L171",
+      "source_location": "L172",
       "weight": 1.0
     },
     {
@@ -34503,7 +34503,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L188",
+      "source_location": "L189",
       "weight": 1.0
     },
     {
@@ -34514,7 +34514,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L242",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -34525,7 +34525,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L312",
+      "source_location": "L313",
       "weight": 1.0
     },
     {
@@ -34536,7 +34536,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L335",
+      "source_location": "L336",
       "weight": 1.0
     },
     {
@@ -34569,7 +34569,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L122",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -42398,5 +42398,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "49e7aa3f212b59cbbaa811c73f4c8f5511ee707b"
+  "built_at_commit": "df9c892cdb550b73bcb9471a3c40d232b0130fd8"
 }

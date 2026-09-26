@@ -9,7 +9,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B-336791.svg)](https://www.postgresql.org/)
 [![XGBoost](https://img.shields.io/badge/XGBoost-2.0%2B-eb6100.svg)](https://xgboost.readthedocs.io/)
 [![Pytest](https://img.shields.io/badge/Pytest-142%20passed-brightgreen.svg)](tests/)
-[![Vitest](https://img.shields.io/badge/Vitest-18%20passed-brightgreen.svg)](frontend/tests/)
+[![Vitest](https://img.shields.io/badge/Vitest-22%20passed-brightgreen.svg)](frontend/tests/)
 [![uv](https://img.shields.io/badge/uv-fast%20packaging-purple.svg)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -47,7 +47,7 @@ flowchart TD
         PG --> LOAD["ml/data/loader.py"]
         LOAD --> DC_FIT["Dixon-Coles MLE Fit"]
         DC_FIT --> P2_CHECK{"Boundary Collapse?"}
-        P2_CHECK -->|Yes| PASS2["Pass 2: Bayesian Shrinkage Prior"]
+        P2_CHECK -->|Yes| PASS2["Pass 2: Empirical Prior Exclusion"]
         P2_CHECK -->|No| G2A_DC["Gate 2A Parameter Validation"]
         PASS2 --> G2A_DC
         
@@ -109,13 +109,14 @@ $$\tau_{x,y}(\lambda, \mu, \rho) = \begin{cases}
 1 & \text{otherwise}
 \end{cases}$$
 
-#### Two-Pass Small-Sample Shrinkage Regularization
-In multi-season sliding windows (e.g. 2026-27), newly promoted clubs with few matches (e.g. Coventry, Hull) risk optimizer boundary collapse ($\alpha \to 0.01$ or $\beta \to 0.01$). MatchSense prevents this using an autonomous **two-pass MLE framework**:
-1. **Pass 1**: Unconstrained joint MLE optimization with convergence monitoring.
-2. **Boundary Detection**: Identifies any team pinned against boundary thresholds ($\le 0.02$).
-3. **Pass 2 (Reduced Parameter Space)**: Pinned teams are shrunk toward empirical league priors using Bayesian shrinkage ($k=10$ match equivalent):
-   $$\theta_{\text{shrunk}} = \frac{n \cdot \theta_{\text{mle}} + k \cdot \theta_{\text{prior}}}{n + k}$$
-   These values are locked and excluded from the solver parameter vector. The optimizer solves Pass 2 over only the remaining active teams and shared parameters ($\gamma, \rho$), ensuring that shared league parameters are not warped by small-sample teams.
+#### Two-Pass Small-Sample Parameter Regularization
+In multi-season sliding windows with early-campaign promoted clubs (fewer than 5 matches in the window), unconstrained L-BFGS-B optimization can experience boundary collapse where a small-sample club's latent parameters peg against the optimization boundary ($\alpha \le 0.15$ or $\beta \le 0.15$). MatchSense prevents parameter distortion using an autonomous **two-pass MLE framework**:
+1. **Pass 1**: Full joint MLE optimization over all clubs with convergence and boundary monitoring.
+2. **Boundary Collapse Detection**: Identifies any small-sample club ($< 5$ matches in window) whose estimated parameter hits the collapse threshold ($\le 0.15$).
+3. **Pass 2 (Parameter Exclusion & Hard-Pinning)**: Collapsed small-sample parameters are hard-pinned to empirical league priors derived from established clubs ($\ge 10$ matches in window):
+   - Collapsed attack: pinned to the $25^{\text{th}}$ percentile of established clubs' attack strengths ($\alpha_{\text{prior}} = P_{25}$).
+   - Collapsed defense: pinned to the $75^{\text{th}}$ percentile of established clubs' defensive vulnerabilities ($\beta_{\text{prior}} = P_{75}$).
+   These pinned parameters are **removed entirely from the optimizer parameter vector** in Pass 2. The optimizer solves a reduced-dimension problem over only the unpinned clubs and shared global parameters ($\gamma, \rho$), guaranteeing that small-sample anomalies cannot warp league-wide home advantage or the low-score correlation factor.
 
 ---
 
@@ -123,7 +124,7 @@ In multi-season sliding windows (e.g. 2026-27), newly promoted clubs with few ma
 
 The discriminative model classifies match outcomes ($y \in \{\text{Home}, \text{Draw}, \text{Away}\}$) using regularized gradient-boosted decision trees (`multi:softprob`).
 
-- **Window-Anchored Dynamic Elo**: Elo ratings updated chronologically across historical match windows ($K=20$), initialized at $1500$, with a $+65.0$ home ground advantage rating boost.
+- **Window-Anchored Dynamic Elo**: Elo ratings updated chronologically across historical match windows ($K_{\text{base}}=24.0$), scaled by a World Football Elo margin-of-victory multiplier ($1.0$ for 1 goal, $1.5$ for 2 goals, $\frac{11 + \Delta G}{8}$ for $\ge 3$ goals), initialized at $1500$, with a $+65.0$ home ground advantage rating boost and inter-season mean-reversion ($0.75$).
 - **Feature Vector (~70 Dimensions)**:
   - **Recent Form**: Points, goal difference, goals scored/conceded, and win/draw/loss counts over rolling 5-match windows.
   - **Match Dynamics**: Rolling shots on target (SOT) for/against, SOT ratio, rolling corners.
@@ -140,7 +141,7 @@ The discriminative model classifies match outcomes ($y \in \{\text{Home}, \text{
 |---|---|---|---|
 | **Gate 2A (Dixon-Coles)** | Post-Fit | $\gamma \in [1.05, 1.55]$, $\rho \in [-0.25, 0.25]$, $\alpha, \beta \in [0.15, 4.0]$ | Abort activation, rollback transaction, retain previous model |
 | **Gate 2A (XGBoost)** | Post-Fit | $\sum P \in [0.98, 1.02]$, $P_k \in [0.0, 1.0]$ | Abort activation, rollback transaction, retain previous model |
-| **Gate 2B (Audit)** | Pre-Retrain | Multi-gameweek out-of-sample RPS & Brier evaluation on frozen predictions | Logs drift alert if RPS degrades $>15\%$ against historical baseline |
+| **Gate 2B (Audit)** | Pre-Retrain | Multi-gameweek out-of-sample RPS & accuracy evaluation on frozen predictions | Logs critical warning alert if gameweek average RPS exceeds the $0.240$ benchmark |
 | **Health Guard** | Live Serving | Database connection + fixture feed configuration + fixture table count | Decoupled `/health` flags degraded ingestion even if DB is connected |
 
 ---
@@ -150,21 +151,21 @@ The discriminative model classifies match outcomes ($y \in \{\text{Home}, \text{
 The weekly sync engine executes a decoupled multi-phase ingestion workflow:
 
 1. **Phase A (Immediate Commit)**:
-   - Queries Football-Data.org API for scheduled fixtures (Gameweek 4 through 38).
+   - Queries Football-Data.org API for all remaining scheduled fixtures across the campaign.
    - Ingests latest completed match results from football-data.co.uk CSVs into PostgreSQL `matches`.
-   - Upserts all 342 upcoming fixtures into PostgreSQL `fixtures` table.
-2. **Gate 2B Audit**: Evaluates frozen pre-match predictions against recently completed matches.
+   - Upserts upcoming scheduled fixtures into PostgreSQL `fixtures` table.
+2. **Gate 2B Audit**: Evaluates frozen pre-match predictions against recently completed matches (alerting if average gameweek RPS exceeds $0.240$).
 3. **Phase B1 (Dixon-Coles Optimization)**:
-   - Fits Dixon-Coles on active sliding window (4 seasons, 1,170 matches).
+   - Fits Dixon-Coles on the active rolling 4-season training window (~1,140–1,520 matches depending on season progress).
    - Tier 1 warm-start optimization $\to$ Tier 2 flat-prior fallback if un-converged.
-   - Applies Two-Pass Shrinkage if boundary collapse is detected.
+   - Applies Two-Pass parameter regularization if boundary collapse is detected.
    - Validates Gate 2A and serializes compressed binary artifact into `models`.
-   - Precomputes score distributions and probabilities for all 342 scheduled fixtures.
+   - Precomputes score distributions and probabilities for all remaining scheduled fixtures.
 4. **Phase B2 (XGBoost Optimization)**:
    - Builds complete feature matrix across historical window.
    - Trains Booster with L1/L2 regularization (`reg_alpha=0.5`, `reg_lambda=1.0`).
    - Validates Gate 2A and saves binary artifact.
-   - Performs atomic `jsonb_set` updates for XGBoost predictions across all 342 fixtures.
+   - Performs atomic `jsonb_set` updates for XGBoost predictions across all scheduled fixtures.
 
 ---
 
@@ -215,7 +216,7 @@ MatchSense/
 │   ├── data/
 │   │   ├── football_data_api.py      # Football-Data.org API client
 │   │   ├── ingestion.py              # CSV ingestion & Pandera validation
-│   │   ├── normalization.py          # Canonical 20-club team name normalization
+│   │   ├── normalization.py          # Canonical Premier League team name normalization
 │   │   └── season.py                 # Dynamic season detection & window derivation
 │   ├── evaluation/
 │   │   ├── metrics.py                # RPS, Brier Score, Log-Loss
@@ -227,7 +228,7 @@ MatchSense/
 │   │   └── pipeline.py               # ~70-feature matrix builder
 │   └── models/
 │       ├── base.py                   # Abstract predictor interface
-│       ├── dixon_coles.py            # Bivariate Poisson MLE with 2-Pass Shrinkage
+│       ├── dixon_coles.py            # Bivariate Poisson MLE with 2-Pass Regularization
 │       └── xgboost_model.py          # Gradient-boosted predictor with feature extraction
 ├── scripts/
 │   ├── seed_data.py                  # Initial database seeding
@@ -250,7 +251,7 @@ MatchSense/
 ### 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/yashkokane/MatchSense.git
+git clone https://github.com/yashkokane1031/MatchSense.git
 cd MatchSense
 
 # Install Python backend dependencies
@@ -285,7 +286,7 @@ uv run alembic upgrade head
 ### 4. Run Data Ingestion & Model Fitting
 
 ```bash
-# Ingest 4 seasons, fit Dixon-Coles & XGBoost, precompute predictions for all 342 fixtures
+# Ingest rolling seasons, fit Dixon-Coles & XGBoost, precompute predictions for scheduled fixtures
 uv run python -m scripts.sync_pipeline
 ```
 
@@ -327,7 +328,7 @@ cd frontend && npm test
 ### Test Coverage Highlights
 - **Mathematical Invariants**: $\sum P(H, D, A) = 1.0$, non-negativity of $\tau(x,y)$, parameter recovery under synthetic data.
 - **Temporal Leakage Protection**: Ensures match features on date $T$ never utilize data from date $\ge T$.
-- **Optimizer Regularization**: Verifies two-pass shrinkage handles single, simultaneous, and multi-team boundary collapses.
+- **Optimizer Regularization**: Verifies two-pass regularization handles single, simultaneous, and multi-team boundary collapses.
 - **Resilience & Failover**: Tests API degradation, database reconnection, and honest UI fallbacks under offline scenarios.
 
 ---

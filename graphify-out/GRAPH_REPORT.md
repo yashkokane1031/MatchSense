@@ -1,7 +1,7 @@
 # Graph Report - MatchSense  (2026-09-26)
 
 ## Corpus Check
-- 153 files · ~102,701 words
+- 153 files · ~102,807 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `49e7aa3f`
+- Built from commit: `df9c892c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
